@@ -2,12 +2,14 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { Pill } from "@/components/ui/Pill";
-import { CLIENTS, PORTFOLIO_ACTIVITY, PORTFOLIO_ALERTS, PORTFOLIO_STATS } from "@/lib/data/portfolio";
+import { PORTFOLIO_ACTIVITY, PORTFOLIO_ALERTS, PORTFOLIO_STATS } from "@/lib/data/portfolio";
+import { useOrganisations } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
 const TH = "border-b border-line px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-faint";
 
 export function PortfolioScreen() {
+  const { orgs, live } = useOrganisations();
   return (
     <div className="flex animate-fade flex-col gap-4">
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3.5">
@@ -36,6 +38,13 @@ export function PortfolioScreen() {
       <section className="overflow-hidden rounded-card border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Client compliance</h2>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-semibold"
+            style={live ? { background: "#e3f2ea", color: "#12503c" } : { background: "#f2f5f5", color: "#5b6b6e" }}
+          >
+            <span className="h-[6px] w-[6px] rounded-full" style={{ background: live ? "#16775a" : "#93a1a4" }} />
+            {live ? "Live · Supabase" : "Local fixtures"}
+          </span>
           <div className="flex min-w-[190px] items-center gap-[7px] rounded-lg border border-line bg-panel px-2.5 py-1.5">
             <Icon name="search" size={13} className="text-ink-faint" />
             <span className="text-[11.5px] text-ink-faint">Search clients…</span>
@@ -55,7 +64,7 @@ export function PortfolioScreen() {
               </tr>
             </thead>
             <tbody>
-              {CLIENTS.map((c) => {
+              {orgs.map((c) => {
                 const health = c.pct >= 80 ? "Healthy" : c.pct >= 60 ? "Attention" : "High risk";
                 const color = c.pct >= 80 ? "#16775a" : c.pct >= 60 ? "#a4501f" : "#8e2b22";
                 const bg = c.pct >= 80 ? "#e3f2ea" : c.pct >= 60 ? "#f8ece1" : "#fbe7e4";

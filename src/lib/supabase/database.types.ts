@@ -12,6 +12,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      organisations: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          sector: string | null
+          coverage_pct: number | null
+          open_tasks: number | null
+          critical_risks: number | null
+          next_review: string | null
+          is_primary: boolean | null
+          created_at: string | null
+        }
+        Insert: Record<string, unknown>
+        Update: Record<string, unknown>
+        Relationships: []
+      }
+      organisation_members: {
+        Row: { org_id: string; user_id: string; role: string }
+        Insert: Record<string, unknown>
+        Update: Record<string, unknown>
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          id: string
+          org_id: string
+          code: string
+          title: string
+          control_id: string | null
+          priority: string | null
+          status: string | null
+          owner: string | null
+          due: string | null
+          overdue: boolean | null
+          reason: string | null
+          display_order: number | null
+          updated_at: string
+        }
+        Insert: Record<string, unknown>
+        Update: Record<string, unknown>
+        Relationships: []
+      }
+      risks: {
+        Row: {
+          id: string
+          org_id: string
+          code: string
+          control_id: string | null
+          title: string
+          domain: string | null
+          likelihood: number | null
+          impact: number | null
+          owner: string | null
+          due: string | null
+          overdue: boolean | null
+          display_order: number | null
+        }
+        Insert: Record<string, unknown>
+        Update: Record<string, unknown>
+        Relationships: []
+      }
       control_answers: {
         Row: {
           user_id: string

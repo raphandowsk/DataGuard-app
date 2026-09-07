@@ -1,9 +1,10 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { RISKS, severityOf } from "@/lib/data/risks";
+import { severityOf } from "@/lib/data/risks";
 import { RISK_COUNTS } from "@/lib/data/dashboard";
 import { RISK_TONE } from "@/lib/tokens";
+import { useRisks } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
 function cellTone(sc: number) {
@@ -15,8 +16,9 @@ function cellTone(sc: number) {
 
 export function RisksScreen() {
   const goControl = useUI((s) => s.goControl);
+  const { risks, live } = useRisks();
 
-  const rows = RISKS.map((r) => {
+  const rows = risks.map((r) => {
     const score = r.l * r.i;
     const sev = severityOf(score);
     const tone = RISK_TONE[sev];
@@ -27,7 +29,7 @@ export function RisksScreen() {
     i,
     cells: [1, 2, 3, 4, 5].map((l) => {
       const t = cellTone(l * i);
-      const count = RISKS.filter((r) => r.l === l && r.i === i).length;
+      const count = risks.filter((r) => r.l === l && r.i === i).length;
       return { ...t, count: count || null };
     }),
   }));
@@ -47,11 +49,18 @@ export function RisksScreen() {
         <section className="overflow-hidden rounded-card border border-line bg-surface">
           <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
             <h2 className="m-0 flex-1 text-[13px] font-semibold">Risk register</h2>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-semibold"
+              style={live ? { background: "#e3f2ea", color: "#12503c" } : { background: "#f2f5f5", color: "#5b6b6e" }}
+            >
+              <span className="h-[6px] w-[6px] rounded-full" style={{ background: live ? "#16775a" : "#93a1a4" }} />
+              {live ? "Live · Supabase" : "Local fixtures"}
+            </span>
             <div className="flex items-center gap-[7px] rounded-lg border border-line bg-panel px-[9px] py-[5px]">
               <Icon name="filter" size={13} className="text-ink-faint" />
               <span className="text-[11.5px] text-ink-muted">All domains</span>
             </div>
-            <span className="text-[11.5px] text-ink-muted">{RISKS.length} open</span>
+            <span className="text-[11.5px] text-ink-muted">{risks.length} open</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-[12.5px]">
