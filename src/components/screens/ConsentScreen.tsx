@@ -3,12 +3,15 @@
 import { Icon } from "@/components/ui/Icon";
 import { Pill } from "@/components/ui/Pill";
 import { StatTiles } from "@/components/ui/StatTiles";
-import { CONSENT, CONSENT_NOTE, CONSENT_STATS } from "@/lib/data/consent";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { CONSENT_NOTE, CONSENT_STATS } from "@/lib/data/consent";
+import { useConsent } from "@/lib/supabase/operational";
 import { STATUS_TO_TONE, TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 export function ConsentScreen() {
   const go = useUI((s) => s.go);
+  const { consent, live } = useConsent();
 
   return (
     <div className="flex animate-fade flex-col gap-4">
@@ -16,11 +19,12 @@ export function ConsentScreen() {
 
       <div className="flex items-start gap-[11px] rounded-xl border border-line bg-surface px-4 py-3">
         <Icon name="info" size={16} className="mt-px flex-none text-ink-muted" />
-        <p className="m-0 max-w-[100ch] text-[12px] leading-[1.55] text-ink-mid">{CONSENT_NOTE}</p>
+        <p className="m-0 flex-1 text-[12px] leading-[1.55] text-ink-mid">{CONSENT_NOTE}</p>
+        <SourcePill live={live} />
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] gap-3.5">
-        {CONSENT.map((c) => {
+        {consent.map((c) => {
           const tone = TONE3[STATUS_TO_TONE[c.status]];
           return (
             <section key={c.purpose} className="rounded-card border border-line bg-surface px-[22px] py-5">

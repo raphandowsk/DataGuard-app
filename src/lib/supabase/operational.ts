@@ -9,6 +9,9 @@ import { ACTIVITIES as ACTIVITY_FIXTURES, type Activity } from "@/lib/data/inven
 import { PROCESSORS as PROCESSOR_FIXTURES, CONTRACTS as CONTRACT_FIXTURES, type Processor, type Contract } from "@/lib/data/processors";
 import { RETENTION as RETENTION_FIXTURES, type RetentionRow } from "@/lib/data/retention";
 import { SENSITIVE as SENSITIVE_FIXTURES, type SensitiveRow } from "@/lib/data/sensitive";
+import { POLICIES as POLICY_FIXTURES, EVIDENCE as EVIDENCE_FIXTURES, AUDIT as AUDIT_FIXTURES, type Policy, type Evidence, type AuditRow } from "@/lib/data/records";
+import { REQUESTS as REQUEST_FIXTURES, type RightsRequest } from "@/lib/data/rights";
+import { CONSENT as CONSENT_FIXTURES, type ConsentRow } from "@/lib/data/consent";
 
 export type Source = "loading" | "live" | "fixtures";
 
@@ -168,7 +171,9 @@ export function useRisks() {
 
 /** Generic read hook for an org-scoped register table with a fixture fallback. */
 function useRegister<T>(
-  table: "activities" | "processors" | "contracts" | "retention_schedule" | "sensitive_data",
+  table:
+    | "activities" | "processors" | "contracts" | "retention_schedule" | "sensitive_data"
+    | "policies" | "evidence" | "audit_log" | "rights_requests" | "consent_records",
   columns: string,
   map: (row: Record<string, unknown>) => T,
   fixture: T[],
@@ -273,6 +278,75 @@ export function useSensitive() {
     SENSITIVE_FIXTURES,
   );
   return { sensitive: rows, live };
+}
+
+export function usePolicies() {
+  const { rows, live } = useRegister<Policy>(
+    "policies",
+    "name,version,owner,approved,next,controls,status",
+    (r) => ({
+      name: String(r.name), version: String(r.version ?? ""), owner: String(r.owner ?? ""),
+      approved: String(r.approved ?? ""), next: String(r.next ?? ""), controls: Number(r.controls ?? 0),
+      status: r.status as Policy["status"],
+    }),
+    POLICY_FIXTURES,
+  );
+  return { policies: rows, live };
+}
+
+export function useEvidence() {
+  const { rows, live } = useRegister<Evidence>(
+    "evidence",
+    "name,kind,controls,owner,added,expiry,strength,size",
+    (r) => ({
+      name: String(r.name), kind: String(r.kind ?? ""), controls: Number(r.controls ?? 0),
+      owner: String(r.owner ?? ""), added: String(r.added ?? ""), expiry: String(r.expiry ?? ""),
+      strength: r.strength as Evidence["strength"], size: String(r.size ?? ""),
+    }),
+    EVIDENCE_FIXTURES,
+  );
+  return { evidence: rows, live };
+}
+
+export function useAudit() {
+  const { rows, live } = useRegister<AuditRow>(
+    "audit_log",
+    "t,who,role,action,object,from_val,to_val,ip",
+    (r) => ({
+      t: String(r.t ?? ""), who: String(r.who ?? ""), role: String(r.role ?? ""), action: String(r.action ?? ""),
+      object: String(r.object ?? ""), from: String(r.from_val ?? ""), to: String(r.to_val ?? ""), ip: String(r.ip ?? ""),
+    }),
+    AUDIT_FIXTURES,
+  );
+  return { audit: rows, live };
+}
+
+export function useRights() {
+  const { rows, live } = useRegister<RightsRequest>(
+    "rights_requests",
+    "code,subject,type,received,days,stage,verified,activity,owner,channel",
+    (r) => ({
+      id: String(r.code), subject: String(r.subject ?? ""), type: String(r.type ?? ""), received: String(r.received ?? ""),
+      days: Number(r.days ?? 0), stage: String(r.stage ?? ""), verified: Boolean(r.verified),
+      activity: String(r.activity ?? ""), owner: String(r.owner ?? ""), channel: String(r.channel ?? ""),
+    }),
+    REQUEST_FIXTURES,
+  );
+  return { requests: rows, live };
+}
+
+export function useConsent() {
+  const { rows, live } = useRegister<ConsentRow>(
+    "consent_records",
+    "purpose,version,method,held,withdrawn,updated,status",
+    (r) => ({
+      purpose: String(r.purpose), version: String(r.version ?? ""), method: String(r.method ?? ""),
+      held: String(r.held ?? ""), withdrawn: String(r.withdrawn ?? ""), updated: String(r.updated ?? ""),
+      status: r.status as ConsentRow["status"],
+    }),
+    CONSENT_FIXTURES,
+  );
+  return { consent: rows, live };
 }
 
 /** All organisations the consultant can see (for the portfolio). */

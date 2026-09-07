@@ -2,11 +2,14 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { StatTiles } from "@/components/ui/StatTiles";
-import { EVIDENCE, EVIDENCE_NOTE, EVIDENCE_STATS, evidenceIcon } from "@/lib/data/records";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { EVIDENCE_NOTE, EVIDENCE_STATS, evidenceIcon } from "@/lib/data/records";
+import { useEvidence } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 export function EvidenceScreen() {
+  const { evidence, live } = useEvidence();
   return (
     <div className="flex animate-fade flex-col gap-4">
       <StatTiles stats={EVIDENCE_STATS} />
@@ -19,6 +22,7 @@ export function EvidenceScreen() {
       <section className="overflow-hidden rounded-card border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Documents</h2>
+          <SourcePill live={live} />
           <div className="flex items-center gap-[7px] rounded-lg border border-line bg-panel px-2.5 py-1.5">
             <Icon name="filter" size={13} className="text-ink-faint" />
             <span className="text-[11.5px] text-ink-muted">All types</span>
@@ -28,7 +32,7 @@ export function EvidenceScreen() {
             Upload
           </button>
         </div>
-        {EVIDENCE.map((e) => {
+        {evidence.map((e) => {
           const tone = e.strength === "Strong" ? TONE3.good : e.strength === "Moderate" ? TONE3.warn : TONE3.bad;
           const missing = e.strength === "Missing";
           const expiryColor = e.expiry.includes("Expires") || e.expiry.includes("Superseded") ? "#a4501f" : "#5b6b6e";

@@ -13,6 +13,9 @@ import { ACTIVITIES } from "../../src/lib/data/inventory.ts";
 import { PROCESSORS, CONTRACTS } from "../../src/lib/data/processors.ts";
 import { RETENTION } from "../../src/lib/data/retention.ts";
 import { SENSITIVE } from "../../src/lib/data/sensitive.ts";
+import { POLICIES, EVIDENCE, AUDIT } from "../../src/lib/data/records.ts";
+import { REQUESTS } from "../../src/lib/data/rights.ts";
+import { CONSENT } from "../../src/lib/data/consent.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const env = Object.fromEntries(
@@ -63,6 +66,30 @@ async function main() {
     cat: s.cat, activity: s.activity, subjects: s.subjects, n: s.n, basis: s.basis, access: s.access,
     status: s.status, masked: s.masked,
   })), "org_id,cat");
+
+  await upsert("policies", POLICIES.map((p) => ({
+    name: p.name, version: p.version, owner: p.owner, approved: p.approved, next: p.next,
+    controls: p.controls, status: p.status,
+  })), "org_id,name");
+
+  await upsert("evidence", EVIDENCE.map((e) => ({
+    name: e.name, kind: e.kind, controls: e.controls, owner: e.owner, added: e.added,
+    expiry: e.expiry, strength: e.strength, size: e.size,
+  })), "org_id,name");
+
+  await upsert("audit_log", AUDIT.map((a) => ({
+    t: a.t, who: a.who, role: a.role, action: a.action, object: a.object, from_val: a.from, to_val: a.to, ip: a.ip,
+  })), "org_id,display_order");
+
+  await upsert("rights_requests", REQUESTS.map((r) => ({
+    code: r.id, subject: r.subject, type: r.type, received: r.received, days: r.days, stage: r.stage,
+    verified: r.verified, activity: r.activity, owner: r.owner, channel: r.channel,
+  })), "org_id,code");
+
+  await upsert("consent_records", CONSENT.map((c) => ({
+    purpose: c.purpose, version: c.version, method: c.method, held: c.held, withdrawn: c.withdrawn,
+    updated: c.updated, status: c.status,
+  })), "org_id,purpose");
 
   console.log("Operational seed complete.");
 }

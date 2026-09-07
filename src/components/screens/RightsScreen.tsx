@@ -2,12 +2,15 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { StatTiles } from "@/components/ui/StatTiles";
-import { REQUESTS, REQUEST_STATS, RIGHTS_NOTE } from "@/lib/data/rights";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { REQUEST_STATS, RIGHTS_NOTE } from "@/lib/data/rights";
+import { useRights } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
 export function RightsScreen() {
   const go = useUI((s) => s.go);
   const openPortal = useUI((s) => s.openPortal);
+  const { requests, live } = useRights();
 
   return (
     <div className="flex animate-fade flex-col gap-4">
@@ -21,6 +24,7 @@ export function RightsScreen() {
       <section className="overflow-hidden rounded-card border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Request queue</h2>
+          <SourcePill live={live} />
           <button onClick={openPortal} className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line-strong bg-surface px-3 py-[7px] text-[12px] font-semibold hover:border-teal hover:text-teal">
             <Icon name="external-link" size={14} className="flex-none" />
             View public portal
@@ -30,7 +34,7 @@ export function RightsScreen() {
             Log a request
           </button>
         </div>
-        {REQUESTS.map((r) => {
+        {requests.map((r) => {
           const closed = r.stage === "Closed";
           const dayLabel = closed ? `Closed in ${r.days} days` : r.days <= 0 ? "Received today" : `${r.days} days elapsed`;
           const dayColor = closed ? "#16775a" : r.days >= 9 ? "#b23a2f" : r.days >= 5 ? "#a4501f" : "#5b6b6e";

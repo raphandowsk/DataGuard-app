@@ -2,7 +2,9 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { StatTiles } from "@/components/ui/StatTiles";
-import { AUDIT, AUDIT_FILTERS, AUDIT_NOTE, AUDIT_STATS } from "@/lib/data/records";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { AUDIT_FILTERS, AUDIT_NOTE, AUDIT_STATS } from "@/lib/data/records";
+import { useAudit } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
 const TH = "border-b border-line px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-faint";
@@ -10,6 +12,7 @@ const TH = "border-b border-line px-3 py-2.5 text-left text-[10.5px] font-bold u
 export function AuditScreen() {
   const auditFilter = useUI((s) => s.auditFilter);
   const setAuditFilter = useUI((s) => s.setAuditFilter);
+  const { audit, live } = useAudit();
 
   return (
     <div className="flex animate-fade flex-col gap-4">
@@ -20,7 +23,8 @@ export function AuditScreen() {
         <p className="m-0 max-w-[100ch] text-[12px] leading-[1.55] text-ink-mid">{AUDIT_NOTE}</p>
       </div>
 
-      <div className="flex flex-wrap gap-[7px]">
+      <div className="flex flex-wrap items-center gap-[7px]">
+        <SourcePill live={live} />
         {AUDIT_FILTERS.map((label) => {
           const on = auditFilter === label;
           return (
@@ -49,7 +53,7 @@ export function AuditScreen() {
               </tr>
             </thead>
             <tbody>
-              {AUDIT.map((a, i) => (
+              {audit.map((a, i) => (
                 <tr key={i} className="border-b border-ground align-top">
                   <td className="tnum whitespace-nowrap px-5 py-[11px] text-ink-muted">{a.t}</td>
                   <td className="px-3 py-[11px]">

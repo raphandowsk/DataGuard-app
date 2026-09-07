@@ -12,6 +12,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      policies: {
+        Row: {
+          id: string; org_id: string; name: string; version: string | null; owner: string | null
+          approved: string | null; next: string | null; controls: number | null; status: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      evidence: {
+        Row: {
+          id: string; org_id: string; name: string; kind: string | null; controls: number | null; owner: string | null
+          added: string | null; expiry: string | null; strength: string | null; size: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      audit_log: {
+        Row: {
+          id: string; org_id: string; t: string | null; who: string | null; role: string | null; action: string | null
+          object: string | null; from_val: string | null; to_val: string | null; ip: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      rights_requests: {
+        Row: {
+          id: string; org_id: string; code: string; subject: string | null; type: string | null; received: string | null
+          days: number | null; stage: string | null; verified: boolean | null; activity: string | null; owner: string | null
+          channel: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      consent_records: {
+        Row: {
+          id: string; org_id: string; purpose: string; version: string | null; method: string | null; held: string | null
+          withdrawn: string | null; updated: string | null; status: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
       activities: {
         Row: {
           id: string; org_id: string; code: string; name: string; dept: string | null; subjects: string | null
