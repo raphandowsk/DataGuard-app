@@ -3,16 +3,22 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "./database.types";
 
+/** Concrete client type inferred from the factory, so generics line up everywhere. */
+export type SupaClient = ReturnType<typeof createBrowserClient<Database>>;
+
+let cached: SupaClient | null | undefined;
+
 /**
- * Browser Supabase client, typed against the generated Database schema.
- * Returns null when env vars are absent so the app still runs on local fixtures.
- * Reference data (framework/controls) is world-readable via RLS.
+ * Shared browser Supabase client (singleton so the auth session is consistent
+ * across reads, writes and the auth provider). Returns null when env vars are
+ * absent so the app still runs on local fixtures.
  */
-export function getSupabaseBrowser() {
+export function getSupabaseBrowser(): SupaClient | null {
+  if (cached !== undefined) return cached;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createBrowserClient<Database>(url, key);
+  cached = url && key ? createBrowserClient<Database>(url, key) : null;
+  return cached;
 }
 
 export const isSupabaseConfigured = () =>

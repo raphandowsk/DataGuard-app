@@ -4,15 +4,24 @@ import { Icon } from "@/components/ui/Icon";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { ANSWERS, ASSESS_SECTIONS } from "@/lib/data/controls";
 import { useControls } from "@/components/ControlsProvider";
+import { useAuth } from "@/lib/supabase/auth";
+import { saveAnswer } from "@/lib/supabase/answers";
 import { RISK_TONE, shade } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 export function AssessmentScreen() {
   const { section27, total } = useControls();
+  const { client, userId } = useAuth();
   const controlId = useUI((s) => s.controlId);
   const answers = useUI((s) => s.answers);
-  const notes = useUI((s) => s.notes);
+  const notesById = useUI((s) => s.notesById);
   const linked = useUI((s) => s.linked);
+
+  const persist = (id: string) => {
+    if (!client || !userId) return;
+    const s = useUI.getState();
+    saveAnswer(client, userId, id, s.answers[id] ?? null, s.notesById[id] ?? null).catch(() => {});
+  };
 
   const foundIdx = section27.findIndex((c) => c.id === controlId);
   const idx = foundIdx >= 0 ? foundIdx : 0;
@@ -39,9 +48,14 @@ export function AssessmentScreen() {
     if (next) useUI.getState().setControl(next.id);
   };
   const saveAndNext = () => {
+    persist(q.id);
     const next = section27[Math.min(section27.length - 1, idx + 1)];
-    useUI.setState({ controlId: next ? next.id : q.id, notes: "" });
-    useUI.getState().flash(`Answer saved to ${q.id}. Evidence and notes travel with it.`);
+    if (next) useUI.getState().setControl(next.id);
+    useUI.getState().flash(
+      userId
+        ? `Answer saved to ${q.id} on your account.`
+        : `Answer saved to ${q.id}. Sign in to keep it across sessions.`,
+    );
   };
 
   return (
@@ -118,7 +132,10 @@ export function AssessmentScreen() {
                   key={label}
                   role="radio"
                   aria-checked={on}
-                  onClick={() => useUI.getState().setAnswer(q.id, label)}
+                  onClick={() => {
+                    useUI.getState().setAnswer(q.id, label);
+                    persist(q.id);
+                  }}
                   className={`flex items-center gap-3 rounded-xl px-4 py-[13px] text-left ${on ? "border-[1.5px] border-teal bg-teal-bg" : "border-[1.5px] border-line bg-surface hover:border-line-strong hover:bg-[#fbfcfc]"}`}
                 >
                   <span className="h-[17px] w-[17px] flex-none rounded-full bg-surface" style={on ? { border: "5px solid #0d7d75" } : { border: "1.5px solid #cfd8d9" }} />
@@ -180,8 +197,9 @@ export function AssessmentScreen() {
             <label htmlFor="dg-notes" className="mb-2 block text-[12.5px] font-semibold">Assessment notes</label>
             <textarea
               id="dg-notes"
-              value={notes}
-              onChange={(e) => useUI.getState().setNotes(e.target.value)}
+              value={notesById[q.id] ?? ""}
+              onChange={(e) => useUI.getState().setNote(q.id, e.target.value)}
+              onBlur={() => persist(q.id)}
               rows={3}
               placeholder="What is in place today, who owns it, and what is still missing."
               className="w-full resize-y rounded-xl border border-line-strong bg-surface px-3.5 py-3 text-[13px] leading-[1.55]"

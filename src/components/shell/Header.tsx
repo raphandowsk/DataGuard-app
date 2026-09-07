@@ -2,11 +2,15 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { useUI } from "@/lib/store";
+import { useAuth } from "@/lib/supabase/auth";
 
 export function Header() {
   const screen = useUI((s) => s.screen);
   const toggleWorkspace = useUI((s) => s.toggleWorkspace);
   const openPalette = useUI((s) => s.openPalette);
+  const setAuthOpen = useUI((s) => s.setAuthOpen);
+  const { email, signOut } = useAuth();
+  const initials = email ? email.slice(0, 2).toUpperCase() : "RK";
 
   const isPortfolio = screen === "portfolio";
   const orgName = isPortfolio ? "Consultant workspace" : "Mazingira Trust";
@@ -75,12 +79,32 @@ export function Header() {
           <Icon name="circle-help" size={17} />
         </button>
         <div className="mx-1 h-6 w-px bg-line" />
-        <button className="flex items-center gap-2 border-none bg-transparent p-0.5">
-          <div className="grid h-[30px] w-[30px] place-items-center rounded-full bg-ink text-[11.5px] font-semibold text-white">
-            RK
+        {email ? (
+          <div className="flex items-center gap-2">
+            <div className="grid h-[30px] w-[30px] place-items-center rounded-full bg-ink text-[11.5px] font-semibold text-white" title={email}>
+              {initials}
+            </div>
+            <span className="hidden max-w-[150px] truncate text-[12px] text-ink-mid lg:block">{email}</span>
+            <button
+              onClick={() => {
+                void signOut();
+                useUI.getState().flash("Signed out. Answers are no longer saved to an account.");
+              }}
+              aria-label="Sign out"
+              className="grid h-[34px] w-[34px] place-items-center rounded-[9px] border border-transparent bg-transparent text-ink-muted hover:border-line hover:bg-panel"
+            >
+              <Icon name="log-out" size={16} />
+            </button>
           </div>
-          <Icon name="chevron-down" size={14} className="text-ink-faint" />
-        </button>
+        ) : (
+          <button
+            onClick={() => setAuthOpen(true)}
+            className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3.5 py-1.5 text-[12.5px] font-semibold hover:border-teal hover:text-teal"
+          >
+            <Icon name="log-in" size={15} className="flex-none" />
+            Sign in
+          </button>
+        )}
       </div>
     </header>
   );

@@ -12,6 +12,20 @@ export type Database = {
   }
   public: {
     Tables: {
+      control_answers: {
+        Row: {
+          user_id: string
+          framework_code: string
+          version_code: string
+          control_id: string
+          answer: string | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: Record<string, unknown>
+        Update: Record<string, unknown>
+        Relationships: []
+      }
       framework_controls: {
         Row: {
           answer_options: string[] | null

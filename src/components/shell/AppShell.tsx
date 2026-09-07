@@ -37,6 +37,8 @@ import { PublicPortal } from "@/components/shell/PublicPortal";
 import { Onboarding } from "@/components/shell/Onboarding";
 import { ScreenStub } from "@/components/screens/ScreenStub";
 import { ControlsProvider } from "@/components/ControlsProvider";
+import { AuthProvider } from "@/lib/supabase/auth";
+import { AuthDialog } from "@/components/shell/AuthDialog";
 import { useUI, type Screen } from "@/lib/store";
 
 /** Screen registry. Implemented screens map to their component; the rest fall
@@ -80,7 +82,7 @@ export function AppShell() {
         useUI.getState().openPalette();
       }
       if (e.key === "Escape") {
-        useUI.setState({ palette: false, onboarding: false, portal: false, evidence: false });
+        useUI.setState({ palette: false, onboarding: false, portal: false, evidence: false, authOpen: false });
       }
     };
     window.addEventListener("keydown", onKey);
@@ -90,24 +92,27 @@ export function AppShell() {
   const Active = SCREENS[screen] ?? ScreenStub;
 
   return (
-    <ControlsProvider>
-      <div className="flex min-h-screen flex-col bg-ground">
-        <Header />
-        <div className="flex min-h-0 flex-1 items-stretch">
-          <Sidebar />
-          <main className="min-w-0 flex-1 overflow-x-hidden">
-            <PageHeader />
-            <div className="px-7 pb-10 pt-3">
-              <Active key={screen} />
-            </div>
-          </main>
+    <AuthProvider>
+      <ControlsProvider>
+        <div className="flex min-h-screen flex-col bg-ground">
+          <Header />
+          <div className="flex min-h-0 flex-1 items-stretch">
+            <Sidebar />
+            <main className="min-w-0 flex-1 overflow-x-hidden">
+              <PageHeader />
+              <div className="px-7 pb-10 pt-3">
+                <Active key={screen} />
+              </div>
+            </main>
+          </div>
+          <CommandPalette />
+          <EvidenceDialog />
+          <PublicPortal />
+          <Onboarding />
+          <AuthDialog />
+          <Toast />
         </div>
-        <CommandPalette />
-        <EvidenceDialog />
-        <PublicPortal />
-        <Onboarding />
-        <Toast />
-      </div>
-    </ControlsProvider>
+      </ControlsProvider>
+    </AuthProvider>
   );
 }

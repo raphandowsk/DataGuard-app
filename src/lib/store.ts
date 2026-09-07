@@ -53,9 +53,10 @@ interface UIState {
 
   // assessment / control state
   answers: Record<string, string>;
-  notes: string;
+  notesById: Record<string, string>;
   linked: LinkedEvidence[];
   evidence: boolean; // attach-evidence dialog
+  authOpen: boolean; // sign-in dialog
   taskView: "list" | "kanban";
 
   // records & ops state
@@ -70,7 +71,9 @@ interface UIState {
   setControl: (id: string) => void;
   assess: (id: string) => void;
   setAnswer: (id: string, label: string) => void;
-  setNotes: (v: string) => void;
+  setNote: (id: string, v: string) => void;
+  hydrateAnswers: (answers: Record<string, string>, notes: Record<string, string>) => void;
+  setAuthOpen: (open: boolean) => void;
   openEvidence: () => void;
   closeEvidence: () => void;
   addEvidence: (e: LinkedEvidence) => void;
@@ -106,7 +109,8 @@ export const useUI = create<UIState>((set, get) => ({
   portalStep: 0,
 
   answers: { "PDPA-027-001": "Partially implemented", "PDPA-027-002": "Implemented" },
-  notes: "",
+  notesById: {},
+  authOpen: false,
   linked: [
     {
       name: "Access Control Procedure v3.pdf",
@@ -129,7 +133,9 @@ export const useUI = create<UIState>((set, get) => ({
   setControl: (id) => set({ controlId: id }),
   assess: (id) => set({ screen: "assessment", controlId: id, palette: false }),
   setAnswer: (id, label) => set((s) => ({ answers: { ...s.answers, [id]: label } })),
-  setNotes: (v) => set({ notes: v }),
+  setNote: (id, v) => set((s) => ({ notesById: { ...s.notesById, [id]: v } })),
+  hydrateAnswers: (answers, notes) => set({ answers, notesById: notes }),
+  setAuthOpen: (open) => set({ authOpen: open }),
   openEvidence: () => set({ evidence: true }),
   closeEvidence: () => set({ evidence: false }),
   addEvidence: (e) => set((s) => ({ linked: [...s.linked, e], evidence: false })),
