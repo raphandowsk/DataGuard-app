@@ -48,6 +48,7 @@ interface UIState {
   toast: string | null;
   onboarding: boolean;
   portal: boolean;
+  portalStep: number; // public rights portal: 0 form, 1 confirmation
 
   // assessment / control state
   answers: Record<string, string>;
@@ -69,7 +70,9 @@ interface UIState {
   openPalette: () => void;
   closePalette: () => void;
   setOnboarding: (open: boolean) => void;
-  setPortal: (open: boolean) => void;
+  openPortal: () => void;
+  closePortal: () => void;
+  submitPortal: () => void;
   flash: (msg: string) => void;
   clearToast: () => void;
 }
@@ -83,6 +86,7 @@ export const useUI = create<UIState>((set, get) => ({
   toast: null,
   onboarding: false,
   portal: false,
+  portalStep: 0,
 
   answers: { "PDPA-027-001": "Partially implemented", "PDPA-027-002": "Implemented" },
   notes: "",
@@ -110,7 +114,9 @@ export const useUI = create<UIState>((set, get) => ({
   openPalette: () => set({ palette: true }),
   closePalette: () => set({ palette: false }),
   setOnboarding: (open) => set({ onboarding: open }),
-  setPortal: (open) => set({ portal: open }),
+  openPortal: () => set({ portal: true, portalStep: 0 }),
+  closePortal: () => set({ portal: false }),
+  submitPortal: () => set({ portalStep: 1 }),
   flash: (msg) => {
     set({ toast: msg });
     if (toastTimer) clearTimeout(toastTimer);

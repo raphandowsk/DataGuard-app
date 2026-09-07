@@ -18,6 +18,13 @@ import { TransfersScreen } from "@/components/screens/TransfersScreen";
 import { TransferAssessScreen } from "@/components/screens/TransferAssessScreen";
 import { SensitiveScreen } from "@/components/screens/SensitiveScreen";
 import { RetentionScreen } from "@/components/screens/RetentionScreen";
+import { RightsScreen } from "@/components/screens/RightsScreen";
+import { RightsCaseScreen } from "@/components/screens/RightsCaseScreen";
+import { ConsentScreen } from "@/components/screens/ConsentScreen";
+import { ConsentHistoryScreen } from "@/components/screens/ConsentHistoryScreen";
+import { ProcessorsScreen } from "@/components/screens/ProcessorsScreen";
+import { ContractsScreen } from "@/components/screens/ContractsScreen";
+import { PublicPortal } from "@/components/shell/PublicPortal";
 import { ScreenStub } from "@/components/screens/ScreenStub";
 import { useUI, type Screen } from "@/lib/store";
 
@@ -35,6 +42,12 @@ const SCREENS: Partial<Record<Screen, React.ComponentType>> = {
   transferAssess: TransferAssessScreen,
   sensitive: SensitiveScreen,
   retention: RetentionScreen,
+  rights: RightsScreen,
+  rightsCase: RightsCaseScreen,
+  consent: ConsentScreen,
+  consentHistory: ConsentHistoryScreen,
+  processors: ProcessorsScreen,
+  contracts: ContractsScreen,
 };
 
 export function AppShell() {
@@ -70,6 +83,7 @@ export function AppShell() {
       </div>
       <CommandPalette />
       <EvidenceDialog />
+      <PublicPortal />
       <Toast />
     </div>
   );
