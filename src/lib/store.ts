@@ -57,6 +57,13 @@ interface UIState {
   evidence: boolean; // attach-evidence dialog
   taskView: "list" | "kanban";
 
+  // records & ops state
+  intakeStep: number; // breach intake wizard 0..3
+  auditFilter: string;
+  reportId: string;
+  format: string;
+  reportSections: Record<string, boolean>;
+
   go: (screen: Screen) => void;
   goControl: (qi: number) => void;
   setQi: (qi: number) => void;
@@ -66,6 +73,11 @@ interface UIState {
   closeEvidence: () => void;
   addEvidence: (e: LinkedEvidence) => void;
   setTaskView: (v: "list" | "kanban") => void;
+  setIntakeStep: (n: number) => void;
+  setAuditFilter: (f: string) => void;
+  setReportId: (id: string) => void;
+  setFormat: (f: string) => void;
+  toggleReportSection: (key: string) => void;
   toggleWorkspace: () => void;
   openPalette: () => void;
   closePalette: () => void;
@@ -101,6 +113,12 @@ export const useUI = create<UIState>((set, get) => ({
   evidence: false,
   taskView: "list",
 
+  intakeStep: 0,
+  auditFilter: "All activity",
+  reportId: "exec",
+  format: "PDF",
+  reportSections: { coverage: true, domains: true, actions: true, risks: true, evidence: false, audit: false },
+
   go: (screen) => set({ screen, palette: false }),
   goControl: (qi) => set({ screen: "control", qi }),
   setQi: (qi) => set({ qi }),
@@ -110,6 +128,11 @@ export const useUI = create<UIState>((set, get) => ({
   closeEvidence: () => set({ evidence: false }),
   addEvidence: (e) => set((s) => ({ linked: [...s.linked, e], evidence: false })),
   setTaskView: (v) => set({ taskView: v }),
+  setIntakeStep: (n) => set({ intakeStep: Math.max(0, Math.min(3, n)) }),
+  setAuditFilter: (f) => set({ auditFilter: f }),
+  setReportId: (id) => set({ reportId: id }),
+  setFormat: (f) => set({ format: f }),
+  toggleReportSection: (key) => set((s) => ({ reportSections: { ...s.reportSections, [key]: !s.reportSections[key] } })),
   toggleWorkspace: () => set({ screen: get().screen === "portfolio" ? "dashboard" : "portfolio" }),
   openPalette: () => set({ palette: true }),
   closePalette: () => set({ palette: false }),

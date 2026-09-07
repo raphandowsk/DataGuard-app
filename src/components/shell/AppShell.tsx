@@ -24,6 +24,12 @@ import { ConsentScreen } from "@/components/screens/ConsentScreen";
 import { ConsentHistoryScreen } from "@/components/screens/ConsentHistoryScreen";
 import { ProcessorsScreen } from "@/components/screens/ProcessorsScreen";
 import { ContractsScreen } from "@/components/screens/ContractsScreen";
+import { IncidentsScreen } from "@/components/screens/IncidentsScreen";
+import { IncidentIntakeScreen } from "@/components/screens/IncidentIntakeScreen";
+import { PoliciesScreen } from "@/components/screens/PoliciesScreen";
+import { EvidenceScreen } from "@/components/screens/EvidenceScreen";
+import { ReportsScreen } from "@/components/screens/ReportsScreen";
+import { AuditScreen } from "@/components/screens/AuditScreen";
 import { PublicPortal } from "@/components/shell/PublicPortal";
 import { ScreenStub } from "@/components/screens/ScreenStub";
 import { useUI, type Screen } from "@/lib/store";
@@ -48,6 +54,12 @@ const SCREENS: Partial<Record<Screen, React.ComponentType>> = {
   consentHistory: ConsentHistoryScreen,
   processors: ProcessorsScreen,
   contracts: ContractsScreen,
+  incidents: IncidentsScreen,
+  incidentIntake: IncidentIntakeScreen,
+  policies: PoliciesScreen,
+  evidence: EvidenceScreen,
+  reports: ReportsScreen,
+  audit: AuditScreen,
 };
 
 export function AppShell() {
