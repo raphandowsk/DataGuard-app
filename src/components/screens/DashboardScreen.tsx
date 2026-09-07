@@ -130,7 +130,7 @@ export function DashboardScreen() {
                   </div>
                 </div>
                 <button
-                  onClick={() => (p.target === null ? go("tasks") : useUI.setState({ screen: "assessment", qi: p.target }))}
+                  onClick={() => (p.action === "Open task" ? go("tasks") : useUI.getState().assess(p.control))}
                   className="flex-none rounded-full border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-semibold hover:border-teal hover:text-teal"
                 >
                   {p.action}

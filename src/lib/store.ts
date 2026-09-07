@@ -43,7 +43,7 @@ export interface LinkedEvidence {
 
 interface UIState {
   screen: Screen;
-  qi: number; // selected control index for assessment / control detail
+  controlId: string; // selected control (assessment queue + control detail)
   palette: boolean;
   toast: string | null;
   onboarding: boolean;
@@ -66,8 +66,9 @@ interface UIState {
   reportSections: Record<string, boolean>;
 
   go: (screen: Screen) => void;
-  goControl: (qi: number) => void;
-  setQi: (qi: number) => void;
+  goControl: (id: string) => void;
+  setControl: (id: string) => void;
+  assess: (id: string) => void;
   setAnswer: (id: string, label: string) => void;
   setNotes: (v: string) => void;
   openEvidence: () => void;
@@ -96,7 +97,7 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useUI = create<UIState>((set, get) => ({
   screen: "dashboard",
-  qi: 3,
+  controlId: "PDPA-027-005",
   palette: false,
   toast: null,
   onboarding: false,
@@ -124,8 +125,9 @@ export const useUI = create<UIState>((set, get) => ({
   reportSections: { coverage: true, domains: true, actions: true, risks: true, evidence: false, audit: false },
 
   go: (screen) => set({ screen, palette: false }),
-  goControl: (qi) => set({ screen: "control", qi }),
-  setQi: (qi) => set({ qi }),
+  goControl: (id) => set({ screen: "control", controlId: id, palette: false }),
+  setControl: (id) => set({ controlId: id }),
+  assess: (id) => set({ screen: "assessment", controlId: id, palette: false }),
   setAnswer: (id, label) => set((s) => ({ answers: { ...s.answers, [id]: label } })),
   setNotes: (v) => set({ notes: v }),
   openEvidence: () => set({ evidence: true }),

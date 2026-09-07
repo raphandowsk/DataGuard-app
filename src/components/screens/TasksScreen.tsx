@@ -1,15 +1,11 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { CONTROLS } from "@/lib/data/controls";
 import { TASK_COLUMNS, TASK_SUMMARY, TASKS, type Task } from "@/lib/data/tasks";
 import { RISK_TONE, STATUS_TONE } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
-function openControl(controlId: string) {
-  const idx = CONTROLS.findIndex((c) => c.id === controlId);
-  useUI.getState().goControl(idx >= 0 ? idx : 3);
-}
+const openControl = (controlId: string) => useUI.getState().goControl(controlId);
 const initialsOf = (owner: string) => owner.split(" ").map((w) => w[0]).join("");
 
 export function TasksScreen() {

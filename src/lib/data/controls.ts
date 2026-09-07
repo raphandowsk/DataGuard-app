@@ -1,6 +1,7 @@
 /** Controls assessed in the prototype (a curated section-27 slice). Transcribed verbatim. */
 export interface Control {
   id: string;
+  section?: string;
   ref: string;
   requirement: string;
   title: string;

@@ -1,14 +1,15 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { CONTROLS } from "@/lib/data/controls";
+import { useControls } from "@/components/ControlsProvider";
 import { useUI } from "@/lib/store";
 
 export function EvidenceDialog() {
   const open = useUI((s) => s.evidence);
-  const qi = useUI((s) => s.qi);
-  const q = CONTROLS[qi];
-  if (!open) return null;
+  const controlId = useUI((s) => s.controlId);
+  const { byId, list } = useControls();
+  const q = byId[controlId] ?? list[0];
+  if (!open || !q) return null;
 
   const attach = () => {
     useUI.getState().addEvidence({

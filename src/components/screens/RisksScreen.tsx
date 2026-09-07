@@ -69,7 +69,7 @@ export function RisksScreen() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} onClick={() => goControl(3)} className="cursor-pointer border-b border-ground hover:bg-[#fbfcfc]">
+                  <tr key={r.id} onClick={() => goControl(r.control)} className="cursor-pointer border-b border-ground hover:bg-[#fbfcfc]">
                     <td className="px-5 py-3">
                       <div className="max-w-[34ch] font-medium [text-wrap:pretty]">{r.title}</div>
                       <div className="mt-[3px] font-mono text-[10.5px] text-ink-faint">{r.id} · {r.control}</div>

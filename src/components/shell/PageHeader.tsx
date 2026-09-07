@@ -2,12 +2,13 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { PAGES } from "@/lib/data/nav";
-import { CONTROLS } from "@/lib/data/controls";
+import { useControls } from "@/components/ControlsProvider";
 import { useUI } from "@/lib/store";
 
 export function PageHeader() {
   const screen = useUI((s) => s.screen);
-  const qi = useUI((s) => s.qi);
+  const controlId = useUI((s) => s.controlId);
+  const { byId } = useControls();
   const go = useUI((s) => s.go);
   let page = PAGES[screen] ?? {
     crumb1: "Mazingira Trust",
@@ -17,8 +18,8 @@ export function PageHeader() {
   };
   // The control detail header carries the selected control's identity.
   if (screen === "control") {
-    const q = CONTROLS[qi];
-    page = { ...page, crumb2: q.id, title: q.title };
+    const q = byId[controlId];
+    if (q) page = { ...page, crumb2: q.id, title: q.title };
   }
 
   return (

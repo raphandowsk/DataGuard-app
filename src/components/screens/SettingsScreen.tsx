@@ -87,7 +87,7 @@ export function SettingsScreen() {
               <span className="text-[12px] font-semibold text-crit-fg">Open critical finding</span>
             </div>
             <p className="m-0 mb-[11px] text-[11.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "#7a2a22" }}>{DPO_WARNING}</p>
-            <button onClick={() => goControl(4)} className="w-full rounded-full border border-[#e3b5ae] bg-surface px-3 py-[7px] text-[11.5px] font-semibold text-crit-fg hover:border-alert">
+            <button onClick={() => goControl("PDPA-027-011")} className="w-full rounded-full border border-[#e3b5ae] bg-surface px-3 py-[7px] text-[11.5px] font-semibold text-crit-fg hover:border-alert">
               Open PDPA-027-011
             </button>
           </div>

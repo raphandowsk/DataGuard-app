@@ -1,18 +1,21 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { CONTROL_ACTIVITY, CONTROLS } from "@/lib/data/controls";
+import { CONTROL_ACTIVITY } from "@/lib/data/controls";
+import { useControls } from "@/components/ControlsProvider";
 import { RISK_TONE } from "@/lib/tokens";
 import { useUI, type Screen } from "@/lib/store";
 
 export function ControlScreen() {
-  const qi = useUI((s) => s.qi);
+  const { byId, list } = useControls();
+  const controlId = useUI((s) => s.controlId);
   const answers = useUI((s) => s.answers);
   const linked = useUI((s) => s.linked);
   const go = useUI((s) => s.go);
 
-  const q = CONTROLS[qi];
-  const tone = RISK_TONE[q.risk];
+  const q = byId[controlId] ?? list[0];
+  if (!q) return null;
+  const tone = RISK_TONE[q.risk] ?? RISK_TONE.MEDIUM;
   const answer = answers[q.id];
   const riskLabel = q.risk.charAt(0) + q.risk.slice(1).toLowerCase();
 

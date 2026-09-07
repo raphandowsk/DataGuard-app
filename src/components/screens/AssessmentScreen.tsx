@@ -1,22 +1,29 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { ANSWERS, ASSESS_SECTIONS, CONTROLS } from "@/lib/data/controls";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { ANSWERS, ASSESS_SECTIONS } from "@/lib/data/controls";
+import { useControls } from "@/components/ControlsProvider";
 import { RISK_TONE, shade } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 export function AssessmentScreen() {
-  const qi = useUI((s) => s.qi);
+  const { section27, total } = useControls();
+  const controlId = useUI((s) => s.controlId);
   const answers = useUI((s) => s.answers);
   const notes = useUI((s) => s.notes);
   const linked = useUI((s) => s.linked);
 
-  const q = CONTROLS[qi];
-  const tone = RISK_TONE[q.risk];
+  const foundIdx = section27.findIndex((c) => c.id === controlId);
+  const idx = foundIdx >= 0 ? foundIdx : 0;
+  const q = section27[idx];
+  if (!q) return null;
+
+  const tone = RISK_TONE[q.risk] ?? RISK_TONE.MEDIUM;
   const answer = answers[q.id];
   const answered = !!answer;
-  const progressLabel = `${qi + 1} of 17 answered · 106 of 123 across the framework`;
-  const progressPct = Math.round(((qi + 1) / 17) * 100);
+  const progressLabel = `${idx + 1} of ${section27.length} in section · ${total} in the framework`;
+  const progressPct = Math.round(((idx + 1) / section27.length) * 100);
 
   const meta: Array<[string, string]> = [
     ["Legal basis", q.ref],
@@ -27,9 +34,13 @@ export function AssessmentScreen() {
     ["Owner", "Neema Kilonzo, DPO"],
   ];
 
+  const goto = (i: number) => {
+    const next = section27[Math.max(0, Math.min(section27.length - 1, i))];
+    if (next) useUI.getState().setControl(next.id);
+  };
   const saveAndNext = () => {
-    const next = Math.min(CONTROLS.length - 1, qi + 1);
-    useUI.setState({ qi: next, notes: "" });
+    const next = section27[Math.min(section27.length - 1, idx + 1)];
+    useUI.setState({ controlId: next ? next.id : q.id, notes: "" });
     useUI.getState().flash(`Answer saved to ${q.id}. Evidence and notes travel with it.`);
   };
 
@@ -37,7 +48,10 @@ export function AssessmentScreen() {
     <div className="grid animate-fade grid-cols-1 items-start gap-4 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
       {/* left: sections */}
       <aside className="rounded-card border border-line bg-surface p-4 xl:sticky xl:top-[76px]">
-        <div className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.8px] text-ink-faint">Sections</div>
+        <div className="mb-2.5 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-[0.8px] text-ink-faint">Sections</span>
+          <LiveBadge />
+        </div>
         <div className="flex flex-col gap-0.5">
           {ASSESS_SECTIONS.map(([name, , count, pct]) => {
             const active = name === "Security";
@@ -48,7 +62,7 @@ export function AssessmentScreen() {
                 <div className="flex items-center gap-2">
                   <Icon name={icon} size={14} className="flex-none" style={{ color }} />
                   <span className="flex-1 text-[12.5px] font-medium">{name}</span>
-                  <span className="tnum text-[10.5px] text-ink-muted">{count}</span>
+                  <span className="tnum text-[10.5px] text-ink-muted">{active ? section27.length : count}</span>
                 </div>
                 <div className="mt-[7px] h-1 overflow-hidden rounded-full bg-ground">
                   <div className="h-full" style={{ width: `${pct}%`, background: color }} />
@@ -107,10 +121,7 @@ export function AssessmentScreen() {
                   onClick={() => useUI.getState().setAnswer(q.id, label)}
                   className={`flex items-center gap-3 rounded-xl px-4 py-[13px] text-left ${on ? "border-[1.5px] border-teal bg-teal-bg" : "border-[1.5px] border-line bg-surface hover:border-line-strong hover:bg-[#fbfcfc]"}`}
                 >
-                  <span
-                    className="h-[17px] w-[17px] flex-none rounded-full bg-surface"
-                    style={on ? { border: "5px solid #0d7d75" } : { border: "1.5px solid #cfd8d9" }}
-                  />
+                  <span className="h-[17px] w-[17px] flex-none rounded-full bg-surface" style={on ? { border: "5px solid #0d7d75" } : { border: "1.5px solid #cfd8d9" }} />
                   <span className="flex-1 text-left text-[13.5px] font-medium">{label}</span>
                   {on && <Icon name="check" size={15} className="text-teal" />}
                 </button>
@@ -136,10 +147,7 @@ export function AssessmentScreen() {
           <div className="mt-[22px]">
             <div className="mb-2.5 flex items-center justify-between">
               <h3 className="m-0 text-[12.5px] font-semibold">Evidence</h3>
-              <button
-                onClick={() => useUI.getState().openEvidence()}
-                className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-semibold hover:border-teal hover:text-teal"
-              >
+              <button onClick={() => useUI.getState().openEvidence()} className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 py-1.5 text-[12px] font-semibold hover:border-teal hover:text-teal">
                 <Icon name="upload" size={14} />
                 Attach evidence
               </button>
@@ -182,14 +190,11 @@ export function AssessmentScreen() {
         </div>
 
         <div className="flex items-center gap-2.5 border-t border-line bg-[#fbfcfc] px-[26px] py-4">
-          <button
-            onClick={() => useUI.getState().setQi(Math.max(0, qi - 1))}
-            className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-[15px] py-[9px] text-[12.5px] font-semibold hover:border-ink-faint"
-          >
+          <button onClick={() => goto(idx - 1)} className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-[15px] py-[9px] text-[12.5px] font-semibold hover:border-ink-faint">
             <Icon name="arrow-left" size={15} />
             Previous
           </button>
-          <button onClick={() => useUI.getState().go("control")} className="border-none bg-transparent px-1 py-[9px] text-[12.5px] font-semibold text-teal hover:underline">
+          <button onClick={() => useUI.getState().goControl(q.id)} className="border-none bg-transparent px-1 py-[9px] text-[12.5px] font-semibold text-teal hover:underline">
             Open full control page
           </button>
           <div className="ml-auto flex items-center gap-2.5">
