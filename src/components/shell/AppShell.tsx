@@ -30,7 +30,11 @@ import { PoliciesScreen } from "@/components/screens/PoliciesScreen";
 import { EvidenceScreen } from "@/components/screens/EvidenceScreen";
 import { ReportsScreen } from "@/components/screens/ReportsScreen";
 import { AuditScreen } from "@/components/screens/AuditScreen";
+import { PortfolioScreen } from "@/components/screens/PortfolioScreen";
+import { SettingsScreen } from "@/components/screens/SettingsScreen";
+import { FrameworkMigrationScreen } from "@/components/screens/FrameworkMigrationScreen";
 import { PublicPortal } from "@/components/shell/PublicPortal";
+import { Onboarding } from "@/components/shell/Onboarding";
 import { ScreenStub } from "@/components/screens/ScreenStub";
 import { useUI, type Screen } from "@/lib/store";
 
@@ -60,6 +64,9 @@ const SCREENS: Partial<Record<Screen, React.ComponentType>> = {
   evidence: EvidenceScreen,
   reports: ReportsScreen,
   audit: AuditScreen,
+  portfolio: PortfolioScreen,
+  settings: SettingsScreen,
+  frameworkMigration: FrameworkMigrationScreen,
 };
 
 export function AppShell() {
@@ -96,6 +103,7 @@ export function AppShell() {
       <CommandPalette />
       <EvidenceDialog />
       <PublicPortal />
+      <Onboarding />
       <Toast />
     </div>
   );

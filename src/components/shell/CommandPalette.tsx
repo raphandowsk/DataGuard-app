@@ -14,7 +14,10 @@ export function CommandPalette() {
   const open = useUI((s) => s.palette);
   const close = useUI((s) => s.closePalette);
   const go = useUI((s) => s.go);
+  const openOnboarding = useUI((s) => s.openOnboarding);
   const [q, setQ] = useState("");
+
+  const setupMatches = "run first-time setup onboarding".includes(q.trim().toLowerCase());
 
   const goto = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -68,7 +71,12 @@ export function CommandPalette() {
               ))}
             </Group>
           )}
-          {goto.length === 0 && copilot.length === 0 && (
+          {setupMatches && (
+            <Group label="SETUP">
+              <Row icon="wand-sparkles" label="Run first-time setup" hint="Onboarding" onClick={openOnboarding} />
+            </Group>
+          )}
+          {goto.length === 0 && copilot.length === 0 && !setupMatches && (
             <div className="px-3 py-6 text-center text-[13px] text-ink-faint">No matches for “{q}”.</div>
           )}
         </div>

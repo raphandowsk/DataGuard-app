@@ -80,5 +80,7 @@ export const GOTO: Array<{ label: string; icon: string; hint: string | null; scr
   { label: "Evidence vault", icon: "archive", hint: null, screen: "evidence" },
   { label: "Settings", icon: "settings", hint: null, screen: "settings" },
   { label: "Audit trail", icon: "history", hint: null, screen: "audit" },
+  { label: "Report a breach", icon: "siren", hint: "Intake", screen: "incidentIntake" },
+  { label: "Framework update", icon: "arrow-up-circle", hint: "v1.1.0", screen: "frameworkMigration" },
   { label: "Consultant workspace", icon: "building-2", hint: null, screen: "portfolio" },
 ];

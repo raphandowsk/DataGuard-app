@@ -47,6 +47,7 @@ interface UIState {
   palette: boolean;
   toast: string | null;
   onboarding: boolean;
+  obStep: number; // onboarding wizard 0..4
   portal: boolean;
   portalStep: number; // public rights portal: 0 form, 1 confirmation
 
@@ -81,7 +82,9 @@ interface UIState {
   toggleWorkspace: () => void;
   openPalette: () => void;
   closePalette: () => void;
-  setOnboarding: (open: boolean) => void;
+  openOnboarding: () => void;
+  closeOnboarding: () => void;
+  setObStep: (n: number) => void;
   openPortal: () => void;
   closePortal: () => void;
   submitPortal: () => void;
@@ -97,6 +100,7 @@ export const useUI = create<UIState>((set, get) => ({
   palette: false,
   toast: null,
   onboarding: false,
+  obStep: 0,
   portal: false,
   portalStep: 0,
 
@@ -136,7 +140,9 @@ export const useUI = create<UIState>((set, get) => ({
   toggleWorkspace: () => set({ screen: get().screen === "portfolio" ? "dashboard" : "portfolio" }),
   openPalette: () => set({ palette: true }),
   closePalette: () => set({ palette: false }),
-  setOnboarding: (open) => set({ onboarding: open }),
+  openOnboarding: () => set({ onboarding: true, obStep: 0, palette: false }),
+  closeOnboarding: () => set({ onboarding: false }),
+  setObStep: (n) => set({ obStep: Math.max(0, Math.min(4, n)) }),
   openPortal: () => set({ portal: true, portalStep: 0 }),
   closePortal: () => set({ portal: false }),
   submitPortal: () => set({ portalStep: 1 }),
