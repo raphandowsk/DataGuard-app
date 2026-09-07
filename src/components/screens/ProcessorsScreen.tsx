@@ -3,13 +3,16 @@
 import { Icon } from "@/components/ui/Icon";
 import { Pill } from "@/components/ui/Pill";
 import { StatTiles } from "@/components/ui/StatTiles";
-import { PROCESSOR_NOTE, PROCESSOR_STATS, PROCESSORS } from "@/lib/data/processors";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { PROCESSOR_NOTE, PROCESSOR_STATS } from "@/lib/data/processors";
+import { useProcessors } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 const TH = "border-b border-line px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-faint";
 
 export function ProcessorsScreen() {
+  const { processors, live } = useProcessors();
   return (
     <div className="flex animate-fade flex-col gap-4">
       <StatTiles stats={PROCESSOR_STATS} />
@@ -22,6 +25,7 @@ export function ProcessorsScreen() {
       <section className="overflow-hidden rounded-card border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Processors</h2>
+          <SourcePill live={live} />
           <button className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add processor
@@ -40,7 +44,7 @@ export function ProcessorsScreen() {
               </tr>
             </thead>
             <tbody>
-              {PROCESSORS.map((p) => {
+              {processors.map((p) => {
                 const tone = TONE3[p.tone];
                 const cross = p.country !== "Tanzania";
                 return (

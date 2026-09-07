@@ -3,13 +3,16 @@
 import { Icon } from "@/components/ui/Icon";
 import { Pill } from "@/components/ui/Pill";
 import { StatTiles } from "@/components/ui/StatTiles";
-import { RETENTION, RETENTION_NOTE, RETENTION_STATS } from "@/lib/data/retention";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { RETENTION_NOTE, RETENTION_STATS } from "@/lib/data/retention";
+import { useRetention } from "@/lib/supabase/operational";
 import { STATUS_TO_TONE, TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 const TH = "border-b border-line px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-faint";
 
 export function RetentionScreen() {
+  const { retention, live } = useRetention();
   return (
     <div className="flex animate-fade flex-col gap-4">
       <StatTiles stats={RETENTION_STATS} />
@@ -22,6 +25,7 @@ export function RetentionScreen() {
       <section className="overflow-hidden rounded-card border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Schedule</h2>
+          <SourcePill live={live} />
           <button className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add record type
@@ -40,7 +44,7 @@ export function RetentionScreen() {
               </tr>
             </thead>
             <tbody>
-              {RETENTION.map((r) => {
+              {retention.map((r) => {
                 const tone = TONE3[STATUS_TO_TONE[r.status]];
                 const noLaw = r.source.includes("no statutory source") || r.source.includes("no fixed period");
                 return (

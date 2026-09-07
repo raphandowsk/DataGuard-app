@@ -12,6 +12,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          id: string; org_id: string; code: string; name: string; dept: string | null; subjects: string | null
+          cats: string | null; sensitive: boolean | null; basis: string | null; purpose: string | null
+          systems: string | null; recipients: string | null; country: string | null; retention: string | null
+          status: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      processors: {
+        Row: {
+          id: string; org_id: string; name: string; service: string | null; country: string | null
+          data: string | null; contract: string | null; tone: string | null; review: string | null
+          activities: number | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      contracts: {
+        Row: {
+          id: string; org_id: string; processor: string; signed: string | null; expires: string | null
+          have: number | null; status: string | null; tone: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      retention_schedule: {
+        Row: {
+          id: string; org_id: string; record: string; period: string | null; source: string | null
+          disposal: string | null; next: string | null; status: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      sensitive_data: {
+        Row: {
+          id: string; org_id: string; cat: string; activity: string | null; subjects: string | null
+          n: string | null; basis: string | null; access: string | null; status: string | null
+          masked: boolean | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
       organisations: {
         Row: {
           id: string
