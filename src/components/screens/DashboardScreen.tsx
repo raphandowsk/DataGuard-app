@@ -4,9 +4,14 @@ import { Icon } from "@/components/ui/Icon";
 import { ACTIVITY, COVERAGE, DOMAINS, PRIORITY_ACTIONS, RISK_COUNTS } from "@/lib/data/dashboard";
 import { RISK_TONE, shade, shadeIcon } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { useFrameworkSummary } from "@/lib/supabase/useFramework";
 
 export function DashboardScreen() {
   const go = useUI((s) => s.go);
+  const fw = useFrameworkSummary();
+  const controls = fw.status === "live" ? fw.data.controls : 123;
+  const requirements = fw.status === "live" ? fw.data.requirements : 96;
 
   return (
     <div className="flex animate-fade flex-col gap-4">
@@ -52,9 +57,12 @@ export function DashboardScreen() {
 
         {/* coverage by domain */}
         <section className="rounded-card border border-line bg-surface px-6 py-[22px]">
-          <div className="mb-1 flex items-center justify-between">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
             <h2 className="m-0 text-[13px] font-semibold">Coverage by domain</h2>
-            <span className="text-[11px] text-ink-muted">123 controls · 96 requirements</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-ink-muted">{controls} controls · {requirements} requirements</span>
+              <LiveBadge />
+            </div>
           </div>
           <div className="flex flex-col">
             {DOMAINS.map(([name, ref, n]) => (

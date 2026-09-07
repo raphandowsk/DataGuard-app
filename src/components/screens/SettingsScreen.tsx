@@ -3,10 +3,14 @@
 import { Icon } from "@/components/ui/Icon";
 import { DPO_PROFILE, DPO_WARNING, NOTIF_SETTINGS, ORG_PROFILE, ROLES } from "@/lib/data/settings";
 import { useUI } from "@/lib/store";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { useFrameworkSummary } from "@/lib/supabase/useFramework";
 
 export function SettingsScreen() {
   const go = useUI((s) => s.go);
   const goControl = useUI((s) => s.goControl);
+  const fw = useFrameworkSummary();
+  const live = fw.status === "live" ? fw.data : null;
 
   return (
     <div className="grid animate-fade grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -90,14 +94,19 @@ export function SettingsScreen() {
         </div>
 
         <div className="rounded-card border border-line bg-surface p-5">
-          <h2 className="m-0 mb-3 text-[13px] font-semibold">Frameworks</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="m-0 text-[13px] font-semibold">Frameworks</h2>
+            <LiveBadge />
+          </div>
           <div className="rounded-xl border-[1.5px] border-teal bg-teal-bg px-[15px] py-[13px]">
             <div className="flex items-center gap-2">
               <span className="h-[7px] w-[7px] flex-none rounded-full bg-good-fg" />
               <span className="flex-1 text-[12.5px] font-semibold">Tanzania PDPA 2022</span>
               <span className="text-[10.5px] font-semibold text-teal-dark">Active</span>
             </div>
-            <div className="mt-1.5 text-[11px] text-ink-mid">123 controls · 96 requirements · matrix v1.0.0</div>
+            <div className="mt-1.5 text-[11px] text-ink-mid">
+              {live ? live.controls : 123} controls · {live ? live.requirements : 96} requirements · matrix v{live ? live.matrixVersion : "1.0.0"}
+            </div>
           </div>
           <button onClick={() => go("frameworkMigration")} className="mt-[11px] flex w-full items-center gap-2.5 rounded-[11px] border border-[#eed9c4] bg-high-bg px-[13px] py-[11px] text-left hover:border-[#c67139]">
             <Icon name="arrow-up-circle" size={15} className="flex-none" style={{ color: "#8a4d1f" }} />
