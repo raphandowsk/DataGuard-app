@@ -2,12 +2,15 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { StatTiles } from "@/components/ui/StatTiles";
-import { INC_TIMELINE, INCIDENT_NOTE, INCIDENT_STATS, INCIDENTS } from "@/lib/data/incidents";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { INCIDENT_NOTE, INCIDENT_STATS } from "@/lib/data/incidents";
+import { useIncidents } from "@/lib/supabase/operational";
 import { RISK_TONE } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 export function IncidentsScreen() {
   const go = useUI((s) => s.go);
+  const { incidents, timeline, live } = useIncidents();
 
   return (
     <div className="flex animate-fade flex-col gap-4">
@@ -17,12 +20,13 @@ export function IncidentsScreen() {
         <section className="overflow-hidden rounded-card border border-line bg-surface">
           <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
             <h2 className="m-0 flex-1 text-[13px] font-semibold">Incident cases</h2>
+            <SourcePill live={live} />
             <button onClick={() => go("incidentIntake")} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-alert px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-crit-fg">
               <Icon name="siren" size={14} className="flex-none" />
               Report a breach
             </button>
           </div>
-          {INCIDENTS.map((i) => {
+          {incidents.map((i) => {
             const tone = RISK_TONE[i.severity];
             const closed = i.stage === "Closed";
             return (
@@ -73,7 +77,7 @@ export function IncidentsScreen() {
           <h2 className="m-0 mb-[3px] mt-2 text-[15px] font-semibold leading-[1.35] [text-wrap:pretty]">Beneficiary list emailed to the wrong ward officer</h2>
           <p className="m-0 mb-[18px] text-[11.5px] text-ink-muted">Section 27(5) notification timeline</p>
           <div className="flex flex-col">
-            {INC_TIMELINE.map((e, idx) => {
+            {timeline.map((e, idx) => {
               const dotColor = e.state === "done" ? "#16775a" : e.state === "active" ? "#2b5f9e" : "#cfd8d9";
               const dotBg = e.state === "done" ? "#e3f2ea" : e.state === "active" ? "#e8effa" : "#f2f5f5";
               const dotIcon = e.state === "done" ? "check" : e.state === "active" ? "loader" : "circle-dashed";
@@ -83,7 +87,7 @@ export function IncidentsScreen() {
                     <span className="grid h-[22px] w-[22px] place-items-center rounded-full" style={{ background: dotBg, color: dotColor, border: `1px solid ${dotColor}` }}>
                       <Icon name={dotIcon} size={11} />
                     </span>
-                    {idx < INC_TIMELINE.length - 1 && <span className="my-[3px] w-px flex-1 bg-ground" />}
+                    {idx < timeline.length - 1 && <span className="my-[3px] w-px flex-1 bg-ground" />}
                   </div>
                   <div className="min-w-0 pb-4">
                     <div className="text-[12.5px] font-semibold" style={{ color: e.state === "todo" ? "#93a1a4" : "#0e1a1c" }}>{e.label}</div>

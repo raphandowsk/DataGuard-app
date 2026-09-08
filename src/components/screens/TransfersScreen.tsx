@@ -2,21 +2,25 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { Pill } from "@/components/ui/Pill";
-import { TRANSFER_NOTE, TRANSFERS } from "@/lib/data/transfers";
+import { SourcePill } from "@/components/ui/SourcePill";
+import { TRANSFER_NOTE } from "@/lib/data/transfers";
+import { useTransfers } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 export function TransfersScreen() {
   const go = useUI((s) => s.go);
+  const { transfers, live } = useTransfers();
   return (
     <div className="flex animate-fade flex-col gap-4">
       <div className="flex items-start gap-[11px] rounded-xl border border-line bg-surface px-4 py-3">
         <Icon name="info" size={16} className="mt-px flex-none text-ink-muted" />
-        <p className="m-0 max-w-[100ch] text-[12px] leading-[1.55] text-ink-mid">{TRANSFER_NOTE}</p>
+        <p className="m-0 flex-1 text-[12px] leading-[1.55] text-ink-mid">{TRANSFER_NOTE}</p>
+        <SourcePill live={live} />
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3.5">
-        {TRANSFERS.map((t) => {
+        {transfers.map((t) => {
           const tone = TONE3[t.tone];
           return (
             <section key={t.id} className="rounded-card border border-line bg-surface px-[22px] py-5">

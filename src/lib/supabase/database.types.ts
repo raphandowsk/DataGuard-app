@@ -12,6 +12,28 @@ export type Database = {
   }
   public: {
     Tables: {
+      incidents: {
+        Row: {
+          id: string; org_id: string; code: string; title: string | null; detected: string | null; severity: string | null
+          stage: string | null; records: string | null; notified: boolean | null; source: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      incident_timeline: {
+        Row: {
+          id: string; org_id: string; incident_code: string; t: string | null; label: string | null; who: string | null
+          state: string | null; note: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
+      transfers: {
+        Row: {
+          id: string; org_id: string; code: string; dest: string | null; processor: string | null; data: string | null
+          volume: string | null; basis: string | null; status: string | null; tone: string | null; owner: string | null
+          note: string | null; display_order: number | null
+        }
+        Insert: Record<string, unknown>; Update: Record<string, unknown>; Relationships: []
+      }
       policies: {
         Row: {
           id: string; org_id: string; name: string; version: string | null; owner: string | null

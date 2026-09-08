@@ -12,6 +12,8 @@ import { SENSITIVE as SENSITIVE_FIXTURES, type SensitiveRow } from "@/lib/data/s
 import { POLICIES as POLICY_FIXTURES, EVIDENCE as EVIDENCE_FIXTURES, AUDIT as AUDIT_FIXTURES, type Policy, type Evidence, type AuditRow } from "@/lib/data/records";
 import { REQUESTS as REQUEST_FIXTURES, type RightsRequest } from "@/lib/data/rights";
 import { CONSENT as CONSENT_FIXTURES, type ConsentRow } from "@/lib/data/consent";
+import { INCIDENTS as INCIDENT_FIXTURES, INC_TIMELINE as TIMELINE_FIXTURES, type Incident, type TimelineEntry } from "@/lib/data/incidents";
+import { TRANSFERS as TRANSFER_FIXTURES, type Transfer } from "@/lib/data/transfers";
 
 export type Source = "loading" | "live" | "fixtures";
 
@@ -173,7 +175,8 @@ export function useRisks() {
 function useRegister<T>(
   table:
     | "activities" | "processors" | "contracts" | "retention_schedule" | "sensitive_data"
-    | "policies" | "evidence" | "audit_log" | "rights_requests" | "consent_records",
+    | "policies" | "evidence" | "audit_log" | "rights_requests" | "consent_records"
+    | "incidents" | "incident_timeline" | "transfers",
   columns: string,
   map: (row: Record<string, unknown>) => T,
   fixture: T[],
@@ -347,6 +350,43 @@ export function useConsent() {
     CONSENT_FIXTURES,
   );
   return { consent: rows, live };
+}
+
+export function useIncidents() {
+  const inc = useRegister<Incident>(
+    "incidents",
+    "code,title,detected,severity,stage,records,notified,source",
+    (r) => ({
+      id: String(r.code), title: String(r.title ?? ""), detected: String(r.detected ?? ""),
+      severity: r.severity as Incident["severity"], stage: String(r.stage ?? ""), records: String(r.records ?? ""),
+      notified: Boolean(r.notified), source: String(r.source ?? ""),
+    }),
+    INCIDENT_FIXTURES,
+  );
+  const tl = useRegister<TimelineEntry>(
+    "incident_timeline",
+    "t,label,who,state,note",
+    (r) => ({
+      t: String(r.t ?? ""), label: String(r.label ?? ""), who: String(r.who ?? ""),
+      state: r.state as TimelineEntry["state"], note: String(r.note ?? ""),
+    }),
+    TIMELINE_FIXTURES,
+  );
+  return { incidents: inc.rows, timeline: tl.rows, live: inc.live };
+}
+
+export function useTransfers() {
+  const { rows, live } = useRegister<Transfer>(
+    "transfers",
+    "code,dest,processor,data,volume,basis,status,tone,owner,note",
+    (r) => ({
+      id: String(r.code), dest: String(r.dest ?? ""), processor: String(r.processor ?? ""), data: String(r.data ?? ""),
+      volume: String(r.volume ?? ""), basis: String(r.basis ?? ""), status: String(r.status ?? ""),
+      tone: r.tone as Transfer["tone"], owner: String(r.owner ?? ""), note: String(r.note ?? ""),
+    }),
+    TRANSFER_FIXTURES,
+  );
+  return { transfers: rows, live };
 }
 
 /** All organisations the consultant can see (for the portfolio). */

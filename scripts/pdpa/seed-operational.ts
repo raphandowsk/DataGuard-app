@@ -16,6 +16,8 @@ import { SENSITIVE } from "../../src/lib/data/sensitive.ts";
 import { POLICIES, EVIDENCE, AUDIT } from "../../src/lib/data/records.ts";
 import { REQUESTS } from "../../src/lib/data/rights.ts";
 import { CONSENT } from "../../src/lib/data/consent.ts";
+import { INCIDENTS, INC_TIMELINE } from "../../src/lib/data/incidents.ts";
+import { TRANSFERS } from "../../src/lib/data/transfers.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const env = Object.fromEntries(
@@ -37,8 +39,10 @@ async function main() {
   if (orgErr) throw new Error("org: " + orgErr.message);
   const orgId = (org as { id: string }).id;
 
-  const upsert = async (table: string, rows: Record<string, unknown>[], conflict: string) => {
-    const { error } = await sb.from(table).upsert(rows.map((r, i) => ({ org_id: orgId, display_order: i + 1, ...r })), { onConflict: conflict });
+  const upsert = async (table: string, rows: Record<string, unknown>[], conflict: string, ignoreDuplicates = false) => {
+    const { error } = await sb
+      .from(table)
+      .upsert(rows.map((r, i) => ({ org_id: orgId, display_order: i + 1, ...r })), { onConflict: conflict, ignoreDuplicates });
     if (error) throw new Error(`${table}: ${error.message}`);
     console.log(`  ${table}: ${rows.length}`);
   };
@@ -79,7 +83,7 @@ async function main() {
 
   await upsert("audit_log", AUDIT.map((a) => ({
     t: a.t, who: a.who, role: a.role, action: a.action, object: a.object, from_val: a.from, to_val: a.to, ip: a.ip,
-  })), "org_id,display_order");
+  })), "org_id,display_order", true); // append-only: insert new rows, never update
 
   await upsert("rights_requests", REQUESTS.map((r) => ({
     code: r.id, subject: r.subject, type: r.type, received: r.received, days: r.days, stage: r.stage,
@@ -90,6 +94,20 @@ async function main() {
     purpose: c.purpose, version: c.version, method: c.method, held: c.held, withdrawn: c.withdrawn,
     updated: c.updated, status: c.status,
   })), "org_id,purpose");
+
+  await upsert("incidents", INCIDENTS.map((i) => ({
+    code: i.id, title: i.title, detected: i.detected, severity: i.severity, stage: i.stage,
+    records: i.records, notified: i.notified, source: i.source,
+  })), "org_id,code");
+
+  await upsert("incident_timeline", INC_TIMELINE.map((e) => ({
+    incident_code: "INC-2026-004", t: e.t, label: e.label, who: e.who, state: e.state, note: e.note,
+  })), "org_id,incident_code,display_order");
+
+  await upsert("transfers", TRANSFERS.map((t) => ({
+    code: t.id, dest: t.dest, processor: t.processor, data: t.data, volume: t.volume, basis: t.basis,
+    status: t.status, tone: t.tone, owner: t.owner, note: t.note,
+  })), "org_id,code");
 
   console.log("Operational seed complete.");
 }
