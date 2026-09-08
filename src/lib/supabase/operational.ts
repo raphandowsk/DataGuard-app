@@ -26,6 +26,11 @@ interface ActiveOrg {
 // Session-scoped cache so switching screens doesn't refetch the active org.
 let orgCache: { userId: string; org: ActiveOrg | null } | null = null;
 
+/** Clear the cached active org (e.g. after provisioning a new workspace). */
+export function resetOrgCache() {
+  orgCache = null;
+}
+
 /** Resolves the signed-in user's primary tenant (Mazingira Trust). */
 export function useActiveOrg(): { org: ActiveOrg | null; source: Source } {
   const { client, userId, ready } = useAuth();

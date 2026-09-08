@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { useUI } from "@/lib/store";
 import { useAuth } from "@/lib/supabase/auth";
@@ -8,7 +9,6 @@ export function Header() {
   const screen = useUI((s) => s.screen);
   const toggleWorkspace = useUI((s) => s.toggleWorkspace);
   const openPalette = useUI((s) => s.openPalette);
-  const setAuthOpen = useUI((s) => s.setAuthOpen);
   const { email, signOut } = useAuth();
   const initials = email ? email.slice(0, 2).toUpperCase() : "RK";
 
@@ -86,10 +86,7 @@ export function Header() {
             </div>
             <span className="hidden max-w-[150px] truncate text-[12px] text-ink-mid lg:block">{email}</span>
             <button
-              onClick={() => {
-                void signOut();
-                useUI.getState().flash("Signed out. Answers are no longer saved to an account.");
-              }}
+              onClick={() => signOut()}
               aria-label="Sign out"
               className="grid h-[34px] w-[34px] place-items-center rounded-[9px] border border-transparent bg-transparent text-ink-muted hover:border-line hover:bg-panel"
             >
@@ -97,13 +94,13 @@ export function Header() {
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => setAuthOpen(true)}
-            className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3.5 py-1.5 text-[12.5px] font-semibold hover:border-teal hover:text-teal"
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3.5 py-1.5 text-[12.5px] font-semibold no-underline hover:border-teal hover:text-teal"
           >
             <Icon name="log-in" size={15} className="flex-none" />
             Sign in
-          </button>
+          </Link>
         )}
       </div>
     </header>

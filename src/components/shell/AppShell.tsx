@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/shell/Header";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -35,10 +36,12 @@ import { SettingsScreen } from "@/components/screens/SettingsScreen";
 import { FrameworkMigrationScreen } from "@/components/screens/FrameworkMigrationScreen";
 import { PublicPortal } from "@/components/shell/PublicPortal";
 import { Onboarding } from "@/components/shell/Onboarding";
+import { CreateWorkspace } from "@/components/shell/CreateWorkspace";
+import { Icon } from "@/components/ui/Icon";
 import { ScreenStub } from "@/components/screens/ScreenStub";
 import { ControlsProvider } from "@/components/ControlsProvider";
-import { AuthProvider } from "@/lib/supabase/auth";
-import { AuthDialog } from "@/components/shell/AuthDialog";
+import { AuthProvider, useAuth } from "@/lib/supabase/auth";
+import { useActiveOrg } from "@/lib/supabase/operational";
 import { useUI, type Screen } from "@/lib/store";
 
 /** Screen registry. Implemented screens map to their component; the rest fall
@@ -72,7 +75,44 @@ const SCREENS: Partial<Record<Screen, React.ComponentType>> = {
   frameworkMigration: FrameworkMigrationScreen,
 };
 
+function Splash() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-ground">
+      <Icon name="loader" size={22} className="animate-spin text-ink-faint" />
+    </div>
+  );
+}
+
+/** Auth gate: signed-out users go to /login. */
+function Gate() {
+  const { ready, userId } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (ready && !userId) router.replace("/login");
+  }, [ready, userId, router]);
+  if (!ready || !userId) return <Splash />;
+  return <WorkspaceGate />;
+}
+
+/** Workspace gate: signed-in users with no org create one first. */
+function WorkspaceGate() {
+  const { org, source } = useActiveOrg();
+  if (source === "loading") return <Splash />;
+  if (!org) return <CreateWorkspace />;
+  return <ShellUI />;
+}
+
 export function AppShell() {
+  return (
+    <AuthProvider>
+      <ControlsProvider>
+        <Gate />
+      </ControlsProvider>
+    </AuthProvider>
+  );
+}
+
+function ShellUI() {
   const screen = useUI((s) => s.screen);
 
   useEffect(() => {
@@ -92,27 +132,22 @@ export function AppShell() {
   const Active = SCREENS[screen] ?? ScreenStub;
 
   return (
-    <AuthProvider>
-      <ControlsProvider>
-        <div className="flex min-h-screen flex-col bg-ground">
-          <Header />
-          <div className="flex min-h-0 flex-1 items-stretch">
-            <Sidebar />
-            <main className="min-w-0 flex-1 overflow-x-hidden">
-              <PageHeader />
-              <div className="px-7 pb-10 pt-3">
-                <Active key={screen} />
-              </div>
-            </main>
+    <div className="flex min-h-screen flex-col bg-ground">
+      <Header />
+      <div className="flex min-h-0 flex-1 items-stretch">
+        <Sidebar />
+        <main className="min-w-0 flex-1 overflow-x-hidden">
+          <PageHeader />
+          <div className="px-7 pb-10 pt-3">
+            <Active key={screen} />
           </div>
-          <CommandPalette />
-          <EvidenceDialog />
-          <PublicPortal />
-          <Onboarding />
-          <AuthDialog />
-          <Toast />
-        </div>
-      </ControlsProvider>
-    </AuthProvider>
+        </main>
+      </div>
+      <CommandPalette />
+      <EvidenceDialog />
+      <PublicPortal />
+      <Onboarding />
+      <Toast />
+    </div>
   );
 }
