@@ -2,7 +2,6 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { Pill } from "@/components/ui/Pill";
-import { PORTFOLIO_ACTIVITY, PORTFOLIO_ALERTS, PORTFOLIO_STATS } from "@/lib/data/portfolio";
 import { useOrganisations } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
@@ -10,10 +9,23 @@ const TH = "border-b border-line px-3 py-2.5 text-left text-[10.5px] font-bold u
 
 export function PortfolioScreen() {
   const { orgs, live } = useOrganisations();
+
+  // Portfolio counts are computed from the organisations this user can actually
+  // see (RLS-scoped) — never from demo fixtures.
+  const healthy = orgs.filter((c) => c.pct >= 80).length;
+  const attention = orgs.filter((c) => c.pct >= 60 && c.pct < 80).length;
+  const highRisk = orgs.filter((c) => c.pct < 60).length;
+  const stats = [
+    { label: "Clients", v: orgs.length, sub: "All on TZ-PDPA 2022", icon: "building-2", bg: "#eef1f2", color: "#3d4e51" },
+    { label: "Healthy", v: healthy, sub: "Coverage above 80%", icon: "circle-check", bg: "#e3f2ea", color: "#16775a" },
+    { label: "Needs attention", v: attention, sub: "Coverage 60–79%", icon: "triangle-alert", bg: "#f8ece1", color: "#a4501f" },
+    { label: "High risk", v: highRisk, sub: "Coverage below 60%", icon: "octagon-alert", bg: "#fbe7e4", color: "#8e2b22" },
+  ];
+
   return (
     <div className="flex animate-fade flex-col gap-4">
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3.5">
-        {PORTFOLIO_STATS.map((s) => (
+        {stats.map((s) => (
           <div key={s.label} className="rounded-[14px] border border-line bg-surface px-[19px] py-[17px]">
             <div className="mb-[9px] flex items-center gap-2">
               <span className="grid h-[26px] w-[26px] place-items-center rounded-lg" style={{ background: s.bg, color: s.color }}>
@@ -64,6 +76,13 @@ export function PortfolioScreen() {
               </tr>
             </thead>
             <tbody>
+              {orgs.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-5 py-8 text-center text-[12.5px] text-ink-muted">
+                    No client organisations yet.
+                  </td>
+                </tr>
+              )}
               {orgs.map((c) => {
                 const health = c.pct >= 80 ? "Healthy" : c.pct >= 60 ? "Attention" : "High risk";
                 const color = c.pct >= 80 ? "#16775a" : c.pct >= 60 ? "#a4501f" : "#8e2b22";
@@ -111,35 +130,16 @@ export function PortfolioScreen() {
       <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
         <section className="rounded-card border border-line bg-surface px-[22px] py-5">
           <h2 className="m-0 mb-3.5 text-[13px] font-semibold">Needs you first</h2>
-          <div className="flex flex-col gap-[11px]">
-            {PORTFOLIO_ALERTS.map((a, i) => (
-              <div key={i} className="flex items-start gap-[11px]">
-                <span className="grid h-[26px] w-[26px] flex-none place-items-center rounded-lg" style={{ background: a.bg, color: a.color }}>
-                  <Icon name={a.icon} size={13} />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[12.5px] font-medium [text-wrap:pretty]">{a.title}</div>
-                  <div className="mt-0.5 text-[11px] text-ink-faint">{a.client} · {a.when}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="m-0 text-[12px] leading-[1.55] text-ink-muted">
+            Cross-client alerts appear here once your clients have open statutory deadlines and overdue tasks. Open a
+            client to work inside its tenant.
+          </p>
         </section>
         <section className="rounded-card border border-line bg-surface px-[22px] py-5">
           <h2 className="m-0 mb-3.5 text-[13px] font-semibold">Recent client activity</h2>
-          <div className="flex flex-col gap-[11px]">
-            {PORTFOLIO_ACTIVITY.map((a, i) => (
-              <div key={i} className="flex items-start gap-[11px]">
-                <span className="grid h-[26px] w-[26px] flex-none place-items-center rounded-lg border border-line bg-panel text-ink-muted">
-                  <Icon name={a.icon} size={13} />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[12.5px] [text-wrap:pretty]">{a.text}</div>
-                  <div className="mt-0.5 text-[11px] text-ink-faint">{a.client} · {a.when}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="m-0 text-[12px] leading-[1.55] text-ink-muted">
+            Activity across your client tenants will show up here as work happens in each workspace.
+          </p>
         </section>
       </div>
     </div>

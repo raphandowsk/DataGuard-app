@@ -16,9 +16,7 @@ export function Header() {
 
   const isPortfolio = screen === "portfolio";
   const orgName = isPortfolio ? "Consultant workspace" : org?.name ?? "Your workspace";
-  const orgMeta = isPortfolio
-    ? "12 client organisations"
-    : org?.sector ?? "Tanzania PDPA 2022 workspace";
+  const orgMeta = isPortfolio ? "Client portfolio" : org?.sector ?? "Tanzania PDPA 2022 workspace";
   const orgInitials = isPortfolio ? "CW" : (org?.name ?? "WS").slice(0, 2).toUpperCase();
 
   return (

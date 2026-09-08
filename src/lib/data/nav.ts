@@ -75,7 +75,7 @@ export const PAGES: Record<string, PageMeta> = {
   risks: { crumb1: "Compliance", crumb2: "Risks", title: "Risk register", sub: "Risks raised from control assessments, scored on the DataGuard product methodology." },
   tasks: { crumb1: "Compliance", crumb2: "Tasks", title: "Tasks", sub: "Remediation work generated from control findings, with the reason it exists attached." },
   reports: { crumb1: "Reports", crumb2: "Report centre", title: "Reports", sub: "Build a report from your current records. Every export names the framework and matrix version it was drawn from." },
-  portfolio: { crumb1: "Consultant workspace", crumb2: "Client portfolio", title: "Good morning, Raphael", sub: "Twelve client organisations. Each one is a separate tenant; nothing is aggregated beyond the counts on this page." },
+  portfolio: { crumb1: "Consultant workspace", crumb2: "Client portfolio", title: "Client portfolio", sub: "Each client is a separate tenant; nothing is aggregated beyond the counts on this page." },
   inventory: { crumb1: "Data", crumb2: "Data inventory", title: "Data inventory", sub: "Every processing activity: what personal data you hold, why you hold it, where it sits, who receives it and how long you keep it." },
   map: { crumb1: "Data", crumb2: "Data map", title: "Data map", sub: "How personal data moves from the people it belongs to, through your systems, out to the parties who receive it." },
   transfers: { crumb1: "Data", crumb2: "Transfers", title: "Cross-border transfers", sub: "Every route that takes personal data outside Tanzania needs a recorded decision, not an assumption." },
