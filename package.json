@@ -4,7 +4,7 @@
   "private": true,
   "description": "DataGuard — Tanzania PDPA 2022 compliance platform. Next.js app over the PDPA control matrix.",
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",

@@ -21,6 +21,7 @@ interface ActiveOrg {
   id: string;
   slug: string;
   name: string;
+  sector: string | null;
 }
 
 // Session-scoped cache so switching screens doesn't refetch the active org.
@@ -53,7 +54,7 @@ export function useActiveOrg(): { org: ActiveOrg | null; source: Source } {
     let cancelled = false;
     client
       .from("organisations")
-      .select("id,slug,name")
+      .select("id,slug,name,sector")
       .eq("is_primary", true)
       .maybeSingle()
       .then(({ data }) => {

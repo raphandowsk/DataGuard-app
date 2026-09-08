@@ -4,18 +4,22 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { useUI } from "@/lib/store";
 import { useAuth } from "@/lib/supabase/auth";
+import { useActiveOrg } from "@/lib/supabase/operational";
 
 export function Header() {
   const screen = useUI((s) => s.screen);
   const toggleWorkspace = useUI((s) => s.toggleWorkspace);
   const openPalette = useUI((s) => s.openPalette);
   const { email, signOut } = useAuth();
+  const { org } = useActiveOrg();
   const initials = email ? email.slice(0, 2).toUpperCase() : "RK";
 
   const isPortfolio = screen === "portfolio";
-  const orgName = isPortfolio ? "Consultant workspace" : "Mazingira Trust";
-  const orgMeta = isPortfolio ? "12 client organisations" : "Environmental NGO · Dar es Salaam";
-  const orgInitials = isPortfolio ? "CW" : "MT";
+  const orgName = isPortfolio ? "Consultant workspace" : org?.name ?? "Your workspace";
+  const orgMeta = isPortfolio
+    ? "12 client organisations"
+    : org?.sector ?? "Tanzania PDPA 2022 workspace";
+  const orgInitials = isPortfolio ? "CW" : (org?.name ?? "WS").slice(0, 2).toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 flex h-[60px] flex-none items-center gap-5 border-b border-line bg-surface px-5">

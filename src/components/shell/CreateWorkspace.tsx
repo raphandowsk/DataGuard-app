@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/lib/supabase/auth";
+import { resetOrgCache } from "@/lib/supabase/operational";
 
 /** Shown to a signed-in user who is not yet a member of any organisation. */
 export function CreateWorkspace() {
@@ -17,17 +18,32 @@ export function CreateWorkspace() {
     if (!client) return;
     setBusy(true);
     setError(null);
-    const rpc = client.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ error: { message: string } | null }>;
-    const { error } = await rpc("provision_org", { p_name: name.trim(), p_sector: sector.trim() });
-    if (error) {
+    // Call rpc as a member of the client so `this` stays bound (supabase-js
+    // reads this.rest internally); detaching the method throws at call time.
+    type RpcClient = {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ error: { message: string } | null }>;
+    };
+    try {
+      const { error } = await (client as unknown as RpcClient).rpc("provision_org", {
+        p_name: name.trim(),
+        p_sector: sector.trim(),
+      });
+      if (error) {
+        setBusy(false);
+        setError(error.message);
+        return;
+      }
+    } catch (err) {
       setBusy(false);
-      setError(error.message);
+      setError(err instanceof Error ? err.message : "Could not create the workspace. Please try again.");
       return;
     }
-    // Reload so the whole app picks up the new tenant cleanly.
+    // Clear the cached (empty) active org, then reload so the whole app picks up
+    // the new tenant cleanly.
+    resetOrgCache();
     window.location.reload();
   };
 
