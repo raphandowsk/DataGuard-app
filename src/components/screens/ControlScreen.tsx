@@ -1,8 +1,8 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { CONTROL_ACTIVITY } from "@/lib/data/controls";
 import { useControls } from "@/components/ControlsProvider";
+import { useTasks, useRisks, useAudit } from "@/lib/supabase/operational";
 import { RISK_TONE } from "@/lib/tokens";
 import { useUI, type Screen } from "@/lib/store";
 
@@ -12,6 +12,9 @@ export function ControlScreen() {
   const answers = useUI((s) => s.answers);
   const linked = useUI((s) => s.linked);
   const go = useUI((s) => s.go);
+  const { tasks } = useTasks();
+  const { risks } = useRisks();
+  const { audit } = useAudit();
 
   const q = byId[controlId] ?? list[0];
   if (!q) return null;
@@ -19,20 +22,24 @@ export function ControlScreen() {
   const answer = answers[q.id];
   const riskLabel = q.risk.charAt(0) + q.risk.slice(1).toLowerCase();
 
+  // Everything shown for this control comes from the framework definition or
+  // from the active org's own live data — never from demo fixtures.
+  const controlRisks = risks.filter((r) => r.control === q.id);
+  const controlTasks = tasks.filter((t) => t.control === q.id);
+  const controlActivity = audit.filter((a) => a.object === q.id);
+
   const header: Array<[string, string]> = [
-    ["Owner", "Neema Kilonzo, DPO"],
-    ["Last assessed", "21 June 2026"],
-    ["Next review", "21 September 2026"],
+    ["Legal reference", q.ref],
+    ["Requirement", q.requirement],
     ["Product risk", riskLabel],
+    ["Review cadence", q.review],
     ["Evidence", `${linked.length} linked`],
   ];
 
   const related: Array<{ label: string; n: number; icon: string; to: Screen }> = [
-    { label: "Risks", n: 1, icon: "triangle-alert", to: "risks" },
-    { label: "Tasks", n: 2, icon: "circle-check-big", to: "tasks" },
+    { label: "Risks", n: controlRisks.length, icon: "triangle-alert", to: "risks" },
+    { label: "Tasks", n: controlTasks.length, icon: "circle-check-big", to: "tasks" },
     { label: "Evidence", n: linked.length, icon: "archive", to: "evidence" },
-    { label: "Processing activities", n: 4, icon: "table-2", to: "inventory" },
-    { label: "Processors", n: 3, icon: "building-2", to: "processors" },
   ];
 
   return (
@@ -45,9 +52,12 @@ export function ControlScreen() {
               <Icon name={tone.icon} size={11} />
               {q.risk}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-high-bg px-[9px] py-[3px] text-[11px] font-semibold" style={{ color: "#8a4d1f" }}>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-[9px] py-[3px] text-[11px] font-semibold"
+              style={answer ? { background: "#f4ede0", color: "#8a4d1f" } : { background: "#f2f5f5", color: "#5b6b6e" }}
+            >
               <Icon name="circle-dashed" size={12} />
-              {answer ?? "Partially implemented"}
+              {answer ?? "Not assessed"}
             </span>
           </div>
           <h2 className="m-0 mb-1.5 text-[22px] font-semibold leading-[1.3] tracking-[-0.4px]">{q.title}</h2>
@@ -93,6 +103,12 @@ export function ControlScreen() {
             </p>
           </div>
           <div className="flex flex-col gap-[7px]">
+            {linked.length === 0 && (
+              <p className="m-0 rounded-[11px] border border-dashed border-line-strong bg-panel px-3.5 py-4 text-[12px] leading-[1.5] text-ink-muted">
+                No evidence linked yet. Attach the documents that prove this control operates — a control without
+                evidence is an assertion rather than a record.
+              </p>
+            )}
             {linked.map((e, i) => (
               <div key={i} className="flex items-center gap-[11px] rounded-[11px] border border-line px-[13px] py-[11px]">
                 <span className="grid h-[30px] w-[30px] flex-none place-items-center rounded-lg bg-good-bg text-good-fg">
@@ -111,20 +127,29 @@ export function ControlScreen() {
 
         <section className="rounded-card border border-line bg-surface px-6 py-[22px]">
           <h3 className="m-0 mb-3.5 text-[13px] font-semibold">Activity history</h3>
-          <div className="flex flex-col">
-            {CONTROL_ACTIVITY.map((a, i) => (
-              <div key={i} className="flex gap-3 pb-[15px]">
-                <div className="flex flex-none flex-col items-center">
-                  <span className="mt-[5px] h-[9px] w-[9px] rounded-full bg-line-strong" />
-                  {i < CONTROL_ACTIVITY.length - 1 && <span className="mt-1 w-px flex-1 bg-ground" />}
+          {controlActivity.length === 0 ? (
+            <p className="m-0 text-[12px] leading-[1.5] text-ink-muted">
+              No activity on this control yet. Changes to its answer, evidence and linked records will be recorded here.
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {controlActivity.map((a, i) => (
+                <div key={i} className="flex gap-3 pb-[15px]">
+                  <div className="flex flex-none flex-col items-center">
+                    <span className="mt-[5px] h-[9px] w-[9px] rounded-full bg-line-strong" />
+                    {i < controlActivity.length - 1 && <span className="mt-1 w-px flex-1 bg-ground" />}
+                  </div>
+                  <div>
+                    <div className="text-[12.5px]">
+                      <span className="font-semibold">{a.who}</span> {a.action.toLowerCase()}
+                      {a.from && a.to ? ` — ${a.from} → ${a.to}` : ""}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-ink-faint">{a.t}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[12.5px]"><span className="font-semibold">{a.who}</span> {a.what}</div>
-                  <div className="mt-0.5 text-[11px] text-ink-faint">{a.when}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 

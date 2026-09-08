@@ -1,10 +1,11 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { DOMAINS } from "@/lib/data/dashboard";
-import { REPORT_FORMATS, REPORT_SECTIONS, REPORT_STATS, REPORTS } from "@/lib/data/reports";
+import { REPORT_FORMATS, REPORT_SECTIONS, REPORTS } from "@/lib/data/reports";
 import { shade } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
+import { useControls } from "@/components/ControlsProvider";
+import { useRisks, useActiveOrg } from "@/lib/supabase/operational";
 
 export function ReportsScreen() {
   const reportId = useUI((s) => s.reportId);
@@ -13,8 +14,37 @@ export function ReportsScreen() {
   const setFormat = useUI((s) => s.setFormat);
   const sections = useUI((s) => s.reportSections);
   const toggleSection = useUI((s) => s.toggleReportSection);
+  const answers = useUI((s) => s.answers);
+  const controls = useControls();
+  const { risks } = useRisks();
+  const { org } = useActiveOrg();
 
   const report = REPORTS.find((r) => r.id === reportId) ?? REPORTS[0];
+
+  // Live figures for the preview, computed from the active org's data.
+  const total = controls.total || controls.list.length;
+  const assessed = controls.list.filter((c) => answers[c.id]).length;
+  const implemented = controls.list.filter((c) => answers[c.id] === "Implemented").length;
+  const partial = controls.list.filter((c) => answers[c.id] === "Partially implemented").length;
+  const coveragePct = total ? Math.round((100 * (implemented + 0.5 * partial)) / total) : 0;
+  const criticalHigh = risks.filter((r) => r.l * r.i >= 10).length;
+  const reportStats = [
+    { v: `${coveragePct}%`, k: "Control coverage" },
+    { v: `${assessed}/${total}`, k: "Controls assessed" },
+    { v: String(criticalHigh), k: "Open critical and high risks" },
+  ];
+  const domainMap = new Map<string, { total: number; score: number }>();
+  for (const c of controls.list) {
+    const e = domainMap.get(c.category || "Other") ?? { total: 0, score: 0 };
+    e.total += 1;
+    const a = answers[c.id];
+    e.score += a === "Implemented" ? 1 : a === "Partially implemented" ? 0.5 : 0;
+    domainMap.set(c.category || "Other", e);
+  }
+  const domains = [...domainMap.entries()]
+    .map(([name, e]) => ({ name, n: e.total ? Math.round((100 * e.score) / e.total) : 0 }))
+    .sort((a, b) => a.n - b.n);
+  const orgName = (org?.name ?? "Your organisation").toUpperCase();
 
   return (
     <div className="grid animate-fade grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_330px]">
@@ -61,14 +91,14 @@ export function ReportsScreen() {
             <div className="mx-auto max-w-[660px] rounded-md border border-line bg-surface px-11 py-10 shadow-[0_1px_3px_rgba(14,26,28,0.05)]">
               <div className="flex items-center justify-between border-b-2 border-ink pb-4">
                 <div>
-                  <div className="text-[9.5px] font-bold tracking-[1px] text-ink-muted">MAZINGIRA TRUST</div>
+                  <div className="text-[9.5px] font-bold tracking-[1px] text-ink-muted">{orgName}</div>
                   <div className="mt-1.5 font-serif text-[26px] leading-[1.15]">{report.name}</div>
                 </div>
                 <div className="text-right text-[9.5px] leading-[1.6] text-ink-muted">
                   <div>Framework</div>
                   <div className="font-semibold text-ink">TZ-PDPA 2022</div>
                   <div className="mt-1.5">Matrix v1.0.0</div>
-                  <div>4 September 2026</div>
+                  <div>{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</div>
                 </div>
               </div>
               <p className="m-0 mt-[18px] text-[11.5px] leading-[1.7] text-ink-mid">
@@ -77,7 +107,7 @@ export function ReportsScreen() {
                 statement of legal compliance.
               </p>
               <div className="my-[22px] grid grid-cols-3 gap-3.5">
-                {REPORT_STATS.map((s) => (
+                {reportStats.map((s) => (
                   <div key={s.k} className="rounded-md bg-panel px-[15px] py-[13px]">
                     <div className="font-serif text-[26px] leading-none">{s.v}</div>
                     <div className="mt-1 text-[9.5px] text-ink-muted">{s.k}</div>
@@ -85,13 +115,13 @@ export function ReportsScreen() {
                 ))}
               </div>
               <div className="mb-[9px] text-[10px] font-bold tracking-[0.7px] text-ink-muted">COVERAGE BY DOMAIN</div>
-              {DOMAINS.map(([name, , n]) => (
-                <div key={name} className="grid grid-cols-[1fr_130px_40px] items-center gap-3 border-b border-ground py-1.5">
-                  <span className="text-[11px]">{name}</span>
+              {domains.map((d) => (
+                <div key={d.name} className="grid grid-cols-[1fr_130px_40px] items-center gap-3 border-b border-ground py-1.5">
+                  <span className="text-[11px]">{d.name}</span>
                   <span className="block h-[5px] overflow-hidden rounded-full bg-ground">
-                    <span className="block h-full" style={{ width: `${n}%`, background: shade(n) }} />
+                    <span className="block h-full" style={{ width: `${d.n}%`, background: shade(d.n) }} />
                   </span>
-                  <span className="tnum text-right text-[11px] font-semibold">{n}%</span>
+                  <span className="tnum text-right text-[11px] font-semibold">{d.n}%</span>
                 </div>
               ))}
             </div>

@@ -113,14 +113,8 @@ export const useUI = create<UIState>((set, get) => ({
   answers: {},
   notesById: {},
   authOpen: false,
-  linked: [
-    {
-      name: "Access Control Procedure v3.pdf",
-      meta: "Uploaded 14 Aug 2026 by Joseph Mwakalinga · 340 KB",
-      strength: "Strong",
-      expiry: "Reviewed quarterly",
-    },
-  ],
+  // No demo evidence: a control starts with nothing linked until the user attaches it.
+  linked: [],
   evidence: false,
   taskView: "list",
 

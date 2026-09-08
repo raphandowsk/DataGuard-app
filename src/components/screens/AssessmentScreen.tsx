@@ -40,7 +40,6 @@ export function AssessmentScreen() {
     ["Risk category", q.category],
     ["Role scope", q.roleScope],
     ["Evidence review", q.review],
-    ["Owner", "Neema Kilonzo, DPO"],
   ];
 
   const goto = (i: number) => {
@@ -67,20 +66,25 @@ export function AssessmentScreen() {
           <LiveBadge />
         </div>
         <div className="flex flex-col gap-0.5">
-          {ASSESS_SECTIONS.map(([name, , count, pct]) => {
+          {ASSESS_SECTIONS.map(([name, ref, count]) => {
             const active = name === "Security";
-            const color = shade(pct);
-            const icon = pct >= 80 ? "circle-check" : pct >= 65 ? "circle-dot" : "triangle-alert";
+            // Only the active section has a live coverage bar, computed from the
+            // user's own answers. Other sections show the framework control count.
+            const secTotal = active ? section27.length : count;
+            const secDone = active ? section27.filter((c) => answers[c.id]).length : 0;
+            const pct = active && secTotal ? Math.round((100 * secDone) / secTotal) : 0;
             return (
               <div key={name} className={`rounded-[10px] p-2.5 ${active ? "border border-[#cbe6e3] bg-teal-bg" : "border border-transparent"}`}>
                 <div className="flex items-center gap-2">
-                  <Icon name={icon} size={14} className="flex-none" style={{ color }} />
                   <span className="flex-1 text-[12.5px] font-medium">{name}</span>
-                  <span className="tnum text-[10.5px] text-ink-muted">{active ? section27.length : count}</span>
+                  <span className="tnum text-[10.5px] text-ink-muted">{secTotal}</span>
                 </div>
-                <div className="mt-[7px] h-1 overflow-hidden rounded-full bg-ground">
-                  <div className="h-full" style={{ width: `${pct}%`, background: color }} />
-                </div>
+                <div className="mt-[3px] text-[10px] text-ink-faint">{ref}</div>
+                {active && (
+                  <div className="mt-[7px] h-1 overflow-hidden rounded-full bg-ground">
+                    <div className="h-full" style={{ width: `${pct}%`, background: shade(pct) }} />
+                  </div>
+                )}
               </div>
             );
           })}
