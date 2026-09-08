@@ -108,7 +108,9 @@ export const useUI = create<UIState>((set, get) => ({
   portal: false,
   portalStep: 0,
 
-  answers: { "PDPA-027-001": "Partially implemented", "PDPA-027-002": "Implemented" },
+  // Empty by default; a signed-in user's saved answers are hydrated from the
+  // database on load (see AuthProvider). New accounts start with a clean slate.
+  answers: {},
   notesById: {},
   authOpen: false,
   linked: [

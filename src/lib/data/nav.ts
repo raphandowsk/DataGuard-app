@@ -69,7 +69,7 @@ export interface PageMeta {
 
 /** Breadcrumb / title / subtitle per screen, transcribed from the prototype PAGES map. */
 export const PAGES: Record<string, PageMeta> = {
-  dashboard: { crumb1: "Mazingira Trust", crumb2: "Dashboard", title: "Your compliance health", sub: "Where you stand against the DataGuard mapping of the Tanzania Personal Data Protection Act, 2022. Last full assessment 21 June 2026." },
+  dashboard: { crumb1: "Mazingira Trust", crumb2: "Dashboard", title: "Your compliance health", sub: "Where you stand against the DataGuard mapping of the Tanzania Personal Data Protection Act, 2022." },
   assessment: { crumb1: "Compliance", crumb2: "Assessment", title: "Security of personal data", sub: "Seventeen controls sit under section 27. Answer in plain terms; the legal reference travels with every answer." },
   control: { crumb1: "Compliance · Controls", crumb2: "Control", title: "Control detail", sub: "Control detail, evidence and remediation for a single mapped requirement." },
   risks: { crumb1: "Compliance", crumb2: "Risks", title: "Risk register", sub: "Risks raised from control assessments, scored on the DataGuard product methodology." },

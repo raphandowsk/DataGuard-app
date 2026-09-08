@@ -3,19 +3,25 @@
 import { Icon } from "@/components/ui/Icon";
 import { PAGES } from "@/lib/data/nav";
 import { useControls } from "@/components/ControlsProvider";
+import { useActiveOrg } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
 export function PageHeader() {
   const screen = useUI((s) => s.screen);
   const controlId = useUI((s) => s.controlId);
   const { byId } = useControls();
+  const { org } = useActiveOrg();
   const go = useUI((s) => s.go);
   let page = PAGES[screen] ?? {
-    crumb1: "Mazingira Trust",
+    crumb1: org?.name ?? "Your workspace",
     crumb2: "",
     title: "",
     sub: "Planned section of the information architecture.",
   };
+  // The dashboard breadcrumb names the active organisation.
+  if (screen === "dashboard") {
+    page = { ...page, crumb1: org?.name ?? "Your workspace" };
+  }
   // The control detail header carries the selected control's identity.
   if (screen === "control") {
     const q = byId[controlId];
