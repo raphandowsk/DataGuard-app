@@ -5,6 +5,13 @@ talks to Supabase directly, so `next build` produces a folder of plain
 HTML/JS (`out/`) that any static host can serve. **No Node server is needed**,
 which is why GitHub Pages (and Hostinger static hosting) work.
 
+**Current live URL:** https://mediumspringgreen-falcon-446430.hostingersite.com/
+(Hostinger, served at the domain root — no `basePath` needed).
+
+> These values are committed in `.env.production`, so **every `next build`
+> inlines them automatically**. If you see "Supabase is not configured" on a
+> deployed site, it was built before this file existed — rebuild and re-upload.
+
 The connection values below are **public** (the publishable key is meant to be
 exposed to the browser), so they are safe to keep in the build:
 
@@ -62,13 +69,16 @@ If you'd rather host the files on Hostinger itself:
 
 ## Supabase configuration (required for both options)
 
-Do these in the Supabase dashboard for project **udlrihnuwfwndbpmxqtq** once the
-public URL exists — replace `https://YOUR-DOMAIN` with it.
+Do these in the Supabase dashboard for project **udlrihnuwfwndbpmxqtq**. For the
+current deployment the URL is
+`https://mediumspringgreen-falcon-446430.hostingersite.com` (swap in your own
+custom domain later).
 
 1. **Authentication → URL Configuration**
-   - **Site URL**: `https://YOUR-DOMAIN`
-   - **Redirect URLs** — add: `https://YOUR-DOMAIN/**` and, for local dev,
-     `http://localhost:3000/**`.
+   - **Site URL**: `https://mediumspringgreen-falcon-446430.hostingersite.com`
+   - **Redirect URLs** — add:
+     `https://mediumspringgreen-falcon-446430.hostingersite.com/**` and, for
+     local dev, `http://localhost:3000/**`.
    Without this, sign-up confirmation links and post-login redirects fail.
 2. **Sign-up email** — the app has email confirmation **on**. Choose one:
    - **Real emails**: **Authentication → Emails / SMTP** → configure a custom
