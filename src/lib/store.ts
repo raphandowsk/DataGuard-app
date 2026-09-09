@@ -52,6 +52,7 @@ interface UIState {
   portalStep: number; // public rights portal: 0 form, 1 confirmation
 
   // assessment / control state
+  assessCat: string | null; // the domain (control category) being assessed
   answers: Record<string, string>;
   notesById: Record<string, string>;
   linked: LinkedEvidence[];
@@ -70,6 +71,8 @@ interface UIState {
   goControl: (id: string) => void;
   setControl: (id: string) => void;
   assess: (id: string) => void;
+  goDomain: (cat: string) => void;
+  setAssessCat: (cat: string | null) => void;
   setAnswer: (id: string, label: string) => void;
   setNote: (id: string, v: string) => void;
   hydrateAnswers: (answers: Record<string, string>, notes: Record<string, string>) => void;
@@ -108,6 +111,7 @@ export const useUI = create<UIState>((set, get) => ({
   portal: false,
   portalStep: 0,
 
+  assessCat: null,
   // Empty by default; a signed-in user's saved answers are hydrated from the
   // database on load (see AuthProvider). New accounts start with a clean slate.
   answers: {},
@@ -128,6 +132,8 @@ export const useUI = create<UIState>((set, get) => ({
   goControl: (id) => set({ screen: "control", controlId: id, palette: false }),
   setControl: (id) => set({ controlId: id }),
   assess: (id) => set({ screen: "assessment", controlId: id, palette: false }),
+  goDomain: (cat) => set({ screen: "assessment", assessCat: cat, palette: false }),
+  setAssessCat: (cat) => set({ assessCat: cat }),
   setAnswer: (id, label) => set((s) => ({ answers: { ...s.answers, [id]: label } })),
   setNote: (id, v) => set((s) => ({ notesById: { ...s.notesById, [id]: v } })),
   hydrateAnswers: (answers, notes) => set({ answers, notesById: notes }),

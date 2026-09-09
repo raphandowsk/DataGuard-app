@@ -20,6 +20,7 @@ const RISK_BANDS = [
 export function DashboardScreen() {
   const go = useUI((s) => s.go);
   const assess = useUI((s) => s.assess);
+  const goDomain = useUI((s) => s.goDomain);
   const answers = useUI((s) => s.answers);
   const controls = useControls();
   const fw = useFrameworkSummary();
@@ -164,7 +165,7 @@ export function DashboardScreen() {
             {domains.map((d) => (
               <button
                 key={d.name}
-                onClick={() => go("assessment")}
+                onClick={() => goDomain(d.name)}
                 className="-mx-2 grid grid-cols-[minmax(0,150px)_minmax(40px,1fr)_70px] items-center gap-3 rounded-[9px] px-2 py-2 text-left hover:bg-panel"
               >
                 <div className="min-w-0">

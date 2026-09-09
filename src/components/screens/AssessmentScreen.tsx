@@ -2,7 +2,7 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { LiveBadge } from "@/components/ui/LiveBadge";
-import { ANSWERS, ASSESS_SECTIONS } from "@/lib/data/controls";
+import { ANSWERS } from "@/lib/data/controls";
 import { useControls } from "@/components/ControlsProvider";
 import { useAuth } from "@/lib/supabase/auth";
 import { saveAnswer } from "@/lib/supabase/answers";
@@ -10,12 +10,28 @@ import { RISK_TONE, shade } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
 export function AssessmentScreen() {
-  const { section27, total } = useControls();
+  const { list, total } = useControls();
   const { client, userId } = useAuth();
   const controlId = useUI((s) => s.controlId);
+  const assessCat = useUI((s) => s.assessCat);
   const answers = useUI((s) => s.answers);
   const notesById = useUI((s) => s.notesById);
   const linked = useUI((s) => s.linked);
+
+  const catOf = (c: { category: string }) => c.category || "Other";
+
+  // Domains = control categories, in matrix order of first appearance.
+  const categories: string[] = [];
+  for (const c of list) {
+    const k = catOf(c);
+    if (!categories.includes(k)) categories.push(k);
+  }
+
+  // Active domain: the one chosen from the dashboard/nav, else the current
+  // control's domain, else the first. The queue is that domain's controls.
+  const currentCat = list.find((c) => c.id === controlId)?.category;
+  const activeCat = assessCat && categories.includes(assessCat) ? assessCat : currentCat || categories[0] || "";
+  const queue = list.filter((c) => catOf(c) === activeCat);
 
   const persist = (id: string) => {
     if (!client || !userId) return;
@@ -23,16 +39,16 @@ export function AssessmentScreen() {
     saveAnswer(client, userId, id, s.answers[id] ?? null, s.notesById[id] ?? null).catch(() => {});
   };
 
-  const foundIdx = section27.findIndex((c) => c.id === controlId);
+  const foundIdx = queue.findIndex((c) => c.id === controlId);
   const idx = foundIdx >= 0 ? foundIdx : 0;
-  const q = section27[idx];
+  const q = queue[idx];
   if (!q) return null;
 
   const tone = RISK_TONE[q.risk] ?? RISK_TONE.MEDIUM;
   const answer = answers[q.id];
   const answered = !!answer;
-  const progressLabel = `${idx + 1} of ${section27.length} in section · ${total} in the framework`;
-  const progressPct = Math.round(((idx + 1) / section27.length) * 100);
+  const progressLabel = `${idx + 1} of ${queue.length} in this domain · ${total} in the framework`;
+  const progressPct = queue.length ? Math.round(((idx + 1) / queue.length) * 100) : 0;
 
   const meta: Array<[string, string]> = [
     ["Legal basis", q.ref],
@@ -42,13 +58,17 @@ export function AssessmentScreen() {
     ["Evidence review", q.review],
   ];
 
+  const selectDomain = (cat: string) => {
+    const first = list.find((c) => catOf(c) === cat);
+    useUI.setState({ assessCat: cat, controlId: first ? first.id : controlId });
+  };
   const goto = (i: number) => {
-    const next = section27[Math.max(0, Math.min(section27.length - 1, i))];
+    const next = queue[Math.max(0, Math.min(queue.length - 1, i))];
     if (next) useUI.getState().setControl(next.id);
   };
   const saveAndNext = () => {
     persist(q.id);
-    const next = section27[Math.min(section27.length - 1, idx + 1)];
+    const next = queue[Math.min(queue.length - 1, idx + 1)];
     if (next) useUI.getState().setControl(next.id);
     useUI.getState().flash(
       userId
@@ -59,33 +79,36 @@ export function AssessmentScreen() {
 
   return (
     <div className="grid animate-fade grid-cols-1 items-start gap-4 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
-      {/* left: sections */}
+      {/* left: domains */}
       <aside className="rounded-card border border-line bg-surface p-4 xl:sticky xl:top-[76px]">
         <div className="mb-2.5 flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-[0.8px] text-ink-faint">Sections</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.8px] text-ink-faint">Domains</span>
           <LiveBadge />
         </div>
-        <div className="flex flex-col gap-0.5">
-          {ASSESS_SECTIONS.map(([name, ref, count]) => {
-            const active = name === "Security";
-            // Only the active section has a live coverage bar, computed from the
-            // user's own answers. Other sections show the framework control count.
-            const secTotal = active ? section27.length : count;
-            const secDone = active ? section27.filter((c) => answers[c.id]).length : 0;
-            const pct = active && secTotal ? Math.round((100 * secDone) / secTotal) : 0;
+        <div className="flex max-h-[60vh] flex-col gap-0.5 overflow-y-auto">
+          {categories.map((cat) => {
+            const catControls = list.filter((c) => catOf(c) === cat);
+            const done = catControls.filter((c) => answers[c.id]).length;
+            const score = catControls.reduce(
+              (s, c) => s + (answers[c.id] === "Implemented" ? 1 : answers[c.id] === "Partially implemented" ? 0.5 : 0),
+              0,
+            );
+            const pct = catControls.length ? Math.round((100 * score) / catControls.length) : 0;
+            const active = cat === activeCat;
             return (
-              <div key={name} className={`rounded-[10px] p-2.5 ${active ? "border border-[#cbe6e3] bg-teal-bg" : "border border-transparent"}`}>
+              <button
+                key={cat}
+                onClick={() => selectDomain(cat)}
+                className={`rounded-[10px] p-2.5 text-left ${active ? "border border-[#cbe6e3] bg-teal-bg" : "border border-transparent hover:bg-panel"}`}
+              >
                 <div className="flex items-center gap-2">
-                  <span className="flex-1 text-[12.5px] font-medium">{name}</span>
-                  <span className="tnum text-[10.5px] text-ink-muted">{secTotal}</span>
+                  <span className={`flex-1 text-[12.5px] ${active ? "font-semibold" : "font-medium"}`}>{cat}</span>
+                  <span className="tnum text-[10.5px] text-ink-muted">{done}/{catControls.length}</span>
                 </div>
-                <div className="mt-[3px] text-[10px] text-ink-faint">{ref}</div>
-                {active && (
-                  <div className="mt-[7px] h-1 overflow-hidden rounded-full bg-ground">
-                    <div className="h-full" style={{ width: `${pct}%`, background: shade(pct) }} />
-                  </div>
-                )}
-              </div>
+                <div className="mt-[7px] h-1 overflow-hidden rounded-full bg-ground">
+                  <div className="h-full" style={{ width: `${pct}%`, background: shade(pct) }} />
+                </div>
+              </button>
             );
           })}
         </div>
@@ -99,7 +122,7 @@ export function AssessmentScreen() {
         <div className="flex items-center gap-4 border-b border-line bg-[#fbfcfc] px-[26px] py-4">
           <div className="flex-1">
             <div className="mb-[7px] flex items-center justify-between text-[11.5px] text-ink-muted">
-              <span>Security of personal data · Section 27</span>
+              <span>{activeCat} · {q.ref}</span>
               <span className="tnum">{progressLabel}</span>
             </div>
             <div className="h-[5px] overflow-hidden rounded-full bg-ground">
