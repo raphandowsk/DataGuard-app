@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { NotificationsMenu } from "@/components/shell/NotificationsMenu";
+import { HelpMenu } from "@/components/shell/HelpMenu";
 import { useUI } from "@/lib/store";
 import { useAuth } from "@/lib/supabase/auth";
 import { useActiveOrg } from "@/lib/supabase/operational";
@@ -67,19 +69,8 @@ export function Header() {
       </button>
 
       <div className="ml-auto flex items-center gap-1.5">
-        <button
-          aria-label="Notifications"
-          className="relative grid h-[34px] w-[34px] place-items-center rounded-[9px] border border-transparent bg-transparent text-ink-muted hover:border-line hover:bg-panel"
-        >
-          <Icon name="bell" size={17} />
-          <span className="absolute right-[7px] top-1.5 h-[7px] w-[7px] rounded-full border-[1.5px] border-surface bg-alert" />
-        </button>
-        <button
-          aria-label="Help"
-          className="grid h-[34px] w-[34px] place-items-center rounded-[9px] border border-transparent bg-transparent text-ink-muted hover:border-line hover:bg-panel"
-        >
-          <Icon name="circle-help" size={17} />
-        </button>
+        <NotificationsMenu />
+        <HelpMenu />
         <div className="mx-1 h-6 w-px bg-line" />
         {email ? (
           <div className="flex items-center gap-2">
