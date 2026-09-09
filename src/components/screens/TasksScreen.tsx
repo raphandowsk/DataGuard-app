@@ -17,7 +17,7 @@ function SourcePill({ live }: { live: boolean }) {
       style={live ? { background: "#e3f2ea", color: "#12503c" } : { background: "#f2f5f5", color: "#5b6b6e" }}
     >
       <span className="h-[6px] w-[6px] rounded-full" style={{ background: live ? "#16775a" : "#93a1a4" }} />
-      {live ? "Live · Supabase" : "Local fixtures"}
+      {live ? "Live" : "Local fixtures"}
     </span>
   );
 }

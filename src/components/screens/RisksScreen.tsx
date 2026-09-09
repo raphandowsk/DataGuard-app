@@ -54,7 +54,7 @@ export function RisksScreen() {
               style={live ? { background: "#e3f2ea", color: "#12503c" } : { background: "#f2f5f5", color: "#5b6b6e" }}
             >
               <span className="h-[6px] w-[6px] rounded-full" style={{ background: live ? "#16775a" : "#93a1a4" }} />
-              {live ? "Live · Supabase" : "Local fixtures"}
+              {live ? "Live" : "Local fixtures"}
             </span>
             <div className="flex items-center gap-[7px] rounded-lg border border-line bg-panel px-[9px] py-[5px]">
               <Icon name="filter" size={13} className="text-ink-faint" />

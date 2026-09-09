@@ -55,7 +55,7 @@ export function PortfolioScreen() {
             style={live ? { background: "#e3f2ea", color: "#12503c" } : { background: "#f2f5f5", color: "#5b6b6e" }}
           >
             <span className="h-[6px] w-[6px] rounded-full" style={{ background: live ? "#16775a" : "#93a1a4" }} />
-            {live ? "Live · Supabase" : "Local fixtures"}
+            {live ? "Live" : "Local fixtures"}
           </span>
           <div className="flex min-w-[190px] items-center gap-[7px] rounded-lg border border-line bg-panel px-2.5 py-1.5">
             <Icon name="search" size={13} className="text-ink-faint" />

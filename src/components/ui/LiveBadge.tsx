@@ -9,10 +9,10 @@ import { useFrameworkSummary } from "@/lib/supabase/useFramework";
 export function LiveBadge() {
   const s = useFrameworkSummary();
   const map = {
-    live: { dot: "#16775a", label: "Live · Supabase", bg: "#e3f2ea", fg: "#12503c" },
+    live: { dot: "#16775a", label: "Live", bg: "#e3f2ea", fg: "#12503c" },
     loading: { dot: "#93a1a4", label: "Connecting…", bg: "#f2f5f5", fg: "#5b6b6e" },
     unconfigured: { dot: "#93a1a4", label: "Local fixtures", bg: "#f2f5f5", fg: "#5b6b6e" },
-    error: { dot: "#a4501f", label: "Supabase error", bg: "#f8ece1", fg: "#8a4d1f" },
+    error: { dot: "#a4501f", label: "Data error", bg: "#f8ece1", fg: "#8a4d1f" },
   } as const;
   const v = map[s.status];
   return (
