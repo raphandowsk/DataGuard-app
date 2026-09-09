@@ -6,7 +6,11 @@ import { Pill } from "@/components/ui/Pill";
 import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
+import { RowRemove } from "@/components/screens/RowRemove";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
 import { useActivities, useRegisterActions } from "@/lib/supabase/operational";
+import type { Activity } from "@/lib/data/inventory";
 import { STATUS_TO_TONE, TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
@@ -26,14 +30,15 @@ const FIELDS: Field[] = [
   { name: "sensitive", label: "Involves sensitive data", type: "checkbox" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: Activity } | null;
+
 export function InventoryScreen() {
   const { activities, live } = useActivities();
-  const { insert, remove } = useRegisterActions("activities");
+  const { insert, remove, update } = useRegisterActions("activities");
   const flash = useUI((s) => s.flash);
   const go = useUI((s) => s.go);
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<Dialog>(null);
   const [dept, setDept] = useState("all");
-  const [pendingRemove, setPendingRemove] = useState<string | null>(null);
 
   const depts = useMemo(() => [...new Set(activities.map((a) => a.dept).filter(Boolean))].sort(), [activities]);
   const rows = dept === "all" ? activities : activities.filter((a) => a.dept === dept);
@@ -51,22 +56,22 @@ export function InventoryScreen() {
     { v: String(systems.length), k: "Systems in scope", sub: `${abroadSystems.length} hosted abroad` },
   ];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    name: v.name, dept: v.dept || null, subjects: v.subjects || null, cats: v.cats || null,
+    sensitive: Boolean(v.sensitive), basis: v.basis || null, purpose: v.purpose || null,
+    systems: v.systems || null, country: (v.country as string) || "Tanzania", retention: v.retention || null,
+    status: v.status || "Gap",
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const code = "PA-" + Math.random().toString(36).slice(2, 6).toUpperCase();
-    const res = await insert({
-      code, name: v.name, dept: v.dept || null, subjects: v.subjects || null, cats: v.cats || null,
-      sensitive: Boolean(v.sensitive), basis: v.basis || null, purpose: v.purpose || null,
-      systems: v.systems || null, country: (v.country as string) || "Tanzania", retention: v.retention || null,
-      status: v.status || "Gap",
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ code: dialog.row.id }, cols(v));
+      if (res.ok) flash(`Updated ${v.name}.`);
+      return res;
+    }
+    const res = await insert({ code: "PA-" + Math.random().toString(36).slice(2, 6).toUpperCase(), ...cols(v) });
     if (res.ok) flash(`Added ${v.name}.`);
     return res;
-  };
-
-  const doRemove = async (id: string, name: string) => {
-    const res = await remove({ code: id });
-    flash(res.ok ? `Removed ${name}.` : res.error ?? "Could not remove.");
-    setPendingRemove(null);
   };
 
   return (
@@ -81,7 +86,7 @@ export function InventoryScreen() {
             <option value="all">All departments</option>
             {depts.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add activity
           </button>
@@ -107,11 +112,7 @@ export function InventoryScreen() {
               {rows.map((a) => {
                 const tone = TONE3[STATUS_TO_TONE[a.status]];
                 return (
-                  <tr
-                    key={a.id}
-                    onClick={() => { go("map"); flash(`Opened ${a.name} on the data map.`); }}
-                    className="cursor-pointer border-b border-ground align-top hover:bg-[#fbfcfc]"
-                  >
+                  <tr key={a.id} onClick={() => { go("map"); flash(`Opened ${a.name} on the data map.`); }} className="cursor-pointer border-b border-ground align-top hover:bg-[#fbfcfc]">
                     <td className="px-5 py-3">
                       <div className="font-medium">{a.name}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -132,16 +133,10 @@ export function InventoryScreen() {
                     <td className="max-w-[170px] px-3 py-3 text-ink-muted [text-wrap:pretty]">{a.retention}</td>
                     <td className="px-3 py-3"><Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{a.status}</Pill></td>
                     <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      {pendingRemove === a.id ? (
-                        <span className="inline-flex items-center gap-1">
-                          <button onClick={() => doRemove(a.id, a.name)} className="rounded-full bg-alert px-2 py-1 text-[10.5px] font-semibold text-white">Remove</button>
-                          <button onClick={() => setPendingRemove(null)} className="rounded-full border border-line px-2 py-1 text-[10.5px] font-semibold text-ink-muted">Cancel</button>
-                        </span>
-                      ) : (
-                        <button onClick={() => setPendingRemove(a.id)} aria-label="Remove activity" className="grid h-7 w-7 place-items-center rounded-lg text-ink-faint hover:bg-panel hover:text-crit-fg">
-                          <Icon name="trash-2" size={14} />
-                        </button>
-                      )}
+                      <div className="inline-flex items-center gap-0.5">
+                        <RowEdit onEdit={() => setDialog({ mode: "edit", row: a })} />
+                        <RowRemove onConfirm={async () => { const res = await remove({ code: a.id }); flash(res.ok ? `Removed ${a.name}.` : res.error ?? "Could not remove."); }} />
+                      </div>
                     </td>
                   </tr>
                 );
@@ -160,7 +155,15 @@ export function InventoryScreen() {
         </p>
       </div>
 
-      <AddRecordDialog open={adding} title="Add processing activity" fields={FIELDS} submitLabel="Add activity" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit processing activity" : "Add processing activity"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add activity"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

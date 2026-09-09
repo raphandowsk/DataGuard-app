@@ -7,7 +7,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { PROCESSOR_NOTE } from "@/lib/data/processors";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { PROCESSOR_NOTE, type Processor } from "@/lib/data/processors";
 import { useProcessors, useRegisterActions } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -25,11 +27,13 @@ const FIELDS: Field[] = [
   { name: "review", label: "Security review", placeholder: "e.g. Due Mar 2027" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: Processor } | null;
+
 export function ProcessorsScreen() {
   const { processors, live } = useProcessors();
-  const { insert, remove } = useRegisterActions("processors");
+  const { insert, remove, update } = useRegisterActions("processors");
   const flash = useUI((s) => s.flash);
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const noContract = processors.filter((p) => p.tone === "bad").length;
   const abroad = processors.filter((p) => p.country && p.country !== "Tanzania").length;
@@ -39,12 +43,18 @@ export function ProcessorsScreen() {
     { v: String(abroad), k: "Located abroad", sub: abroad ? "May need a transfer decision" : "All in Tanzania" },
   ];
 
-  const onSubmit = async (v: Record<string, string | boolean>) => {
+  const cols = (v: Record<string, string | boolean>) => {
     const contract = (v.contract as string) || "No contract";
-    const res = await insert({
-      name: v.name, service: v.service || null, country: (v.country as string) || "Tanzania",
-      data: v.data || null, contract, tone: toneFor(contract), review: v.review || null, activities: 0,
-    });
+    return { name: v.name, service: v.service || null, country: (v.country as string) || "Tanzania", data: v.data || null, contract, tone: toneFor(contract), review: v.review || null };
+  };
+
+  const onSubmit = async (v: Record<string, string | boolean>) => {
+    if (dialog?.mode === "edit") {
+      const res = await update({ name: dialog.row.name }, cols(v));
+      if (res.ok) flash(`Updated ${v.name}.`);
+      return res;
+    }
+    const res = await insert({ ...cols(v), activities: 0 });
     if (res.ok) flash(`Added ${v.name}.`);
     return res;
   };
@@ -62,7 +72,7 @@ export function ProcessorsScreen() {
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Processors</h2>
           <SourcePill live={live} />
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add processor
           </button>
@@ -103,7 +113,12 @@ export function ProcessorsScreen() {
                     </td>
                     <td className="px-3 py-3"><Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{p.contract}</Pill></td>
                     <td className="px-3 py-3 text-ink-muted">{p.review}</td>
-                    <td className="px-5 py-3 text-right"><RowRemove onConfirm={async () => { const res = await remove({ name: p.name }); flash(res.ok ? `Removed ${p.name}.` : res.error ?? "Could not remove."); }} /></td>
+                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-0.5">
+                        <RowEdit onEdit={() => setDialog({ mode: "edit", row: p })} />
+                        <RowRemove onConfirm={async () => { const res = await remove({ name: p.name }); flash(res.ok ? `Removed ${p.name}.` : res.error ?? "Could not remove."); }} />
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -112,7 +127,15 @@ export function ProcessorsScreen() {
         </div>
       </section>
 
-      <AddRecordDialog open={adding} title="Add processor" fields={FIELDS} submitLabel="Add processor" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit processor" : "Add processor"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add processor"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

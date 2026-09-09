@@ -6,7 +6,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { RIGHTS_NOTE } from "@/lib/data/rights";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { RIGHTS_NOTE, type RightsRequest } from "@/lib/data/rights";
 import { useRights, useRegisterActions } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
@@ -21,12 +23,14 @@ const FIELDS: Field[] = [
   { name: "verified", label: "Identity verified", type: "checkbox" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: RightsRequest } | null;
+
 export function RightsScreen() {
   const openPortal = useUI((s) => s.openPortal);
   const flash = useUI((s) => s.flash);
   const { requests, live } = useRights();
-  const { insert, remove } = useRegisterActions("rights_requests");
-  const [adding, setAdding] = useState(false);
+  const { insert, remove, update } = useRegisterActions("rights_requests");
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const open = requests.filter((r) => r.stage !== "Closed");
   const awaiting = open.filter((r) => !r.verified).length;
@@ -38,13 +42,19 @@ export function RightsScreen() {
     { v: String(open.filter((r) => (r.days || 0) >= 25).length), k: "Approaching a month", sub: "Act does not fix one deadline" },
   ];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    subject: v.subject, type: v.type || "Access", received: v.received || null,
+    stage: v.stage || "Verifying identity", verified: Boolean(v.verified), activity: v.activity || null,
+    owner: v.owner || null, channel: v.channel || "Email",
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const code = "DSR-2026-" + String(Math.floor(100 + Math.random() * 900));
-    const res = await insert({
-      code, subject: v.subject, type: v.type || "Access", received: v.received || null, days: 0,
-      stage: v.stage || "Verifying identity", verified: Boolean(v.verified), activity: v.activity || null,
-      owner: v.owner || null, channel: v.channel || "Email",
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ code: dialog.row.id }, cols(v));
+      if (res.ok) flash(`Updated ${dialog.row.id}.`);
+      return res;
+    }
+    const res = await insert({ code: "DSR-2026-" + String(Math.floor(100 + Math.random() * 900)), days: 0, ...cols(v) });
     if (res.ok) flash(`Logged request from ${v.subject}.`);
     return res;
   };
@@ -66,7 +76,7 @@ export function RightsScreen() {
             <Icon name="external-link" size={14} className="flex-none" />
             View public portal
           </button>
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Log a request
           </button>
@@ -102,20 +112,25 @@ export function RightsScreen() {
                 <div className="mt-0.5 text-[11px] text-ink-faint">Received {r.received}</div>
               </div>
               <span className="inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-[3px] text-[11px] font-semibold" style={{ color: stageColor, background: stageBg }}>{r.stage}</span>
-              <button
-                onClick={() => useUI.getState().openDetail("rightsCase", r.id, `${r.type} — ${r.subject}`)}
-                aria-label="Open request"
-                className="grid h-8 w-8 flex-none place-items-center rounded-[9px] border border-line bg-surface text-ink-muted hover:border-teal hover:text-teal"
-              >
+              <button onClick={() => useUI.getState().openDetail("rightsCase", r.id, `${r.type} — ${r.subject}`)} aria-label="Open request" className="grid h-8 w-8 flex-none place-items-center rounded-[9px] border border-line bg-surface text-ink-muted hover:border-teal hover:text-teal">
                 <Icon name="arrow-up-right" size={15} />
               </button>
+              <RowEdit onEdit={() => setDialog({ mode: "edit", row: r })} />
               <RowRemove onConfirm={async () => { const res = await remove({ code: r.id }); flash(res.ok ? `Removed ${r.id}.` : res.error ?? "Could not remove."); }} />
             </div>
           );
         })}
       </section>
 
-      <AddRecordDialog open={adding} title="Log a rights request" fields={FIELDS} submitLabel="Log request" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit rights request" : "Log a rights request"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Log request"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

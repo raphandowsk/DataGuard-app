@@ -6,7 +6,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { INCIDENT_NOTE } from "@/lib/data/incidents";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { INCIDENT_NOTE, type Incident } from "@/lib/data/incidents";
 import { useIncidents, useRegisterActions } from "@/lib/supabase/operational";
 import { RISK_TONE } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -21,12 +23,14 @@ const FIELDS: Field[] = [
   { name: "notified", label: "Commission notified", type: "checkbox" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: Incident } | null;
+
 export function IncidentsScreen() {
   const go = useUI((s) => s.go);
   const flash = useUI((s) => s.flash);
   const { incidents, timeline, live } = useIncidents();
-  const { insert, remove } = useRegisterActions("incidents");
-  const [adding, setAdding] = useState(false);
+  const { insert, remove, update } = useRegisterActions("incidents");
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const open = incidents.filter((i) => i.stage !== "Closed").length;
   const notified = incidents.filter((i) => i.notified).length;
@@ -40,12 +44,19 @@ export function IncidentsScreen() {
 
   const featured = incidents[0];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    title: v.title, detected: v.detected || null, severity: v.severity || "MEDIUM",
+    stage: v.stage || "Investigating", records: v.records || null, notified: Boolean(v.notified), source: v.source || null,
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
+    if (dialog?.mode === "edit") {
+      const res = await update({ code: dialog.row.id }, cols(v));
+      if (res.ok) flash(`Updated ${dialog.row.id}.`);
+      return res;
+    }
     const code = "INC-2026-" + String(Math.floor(100 + Math.random() * 900));
-    const res = await insert({
-      code, title: v.title, detected: v.detected || null, severity: v.severity || "MEDIUM",
-      stage: v.stage || "Investigating", records: v.records || null, notified: Boolean(v.notified), source: v.source || null,
-    });
+    const res = await insert({ code, ...cols(v) });
     if (res.ok) flash(`Logged incident ${code}.`);
     return res;
   };
@@ -63,7 +74,7 @@ export function IncidentsScreen() {
               <Icon name="clipboard-list" size={14} className="flex-none" />
               Guided intake
             </button>
-            <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-alert px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-crit-fg">
+            <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-alert px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-crit-fg">
               <Icon name="siren" size={14} className="flex-none" />
               Log incident
             </button>
@@ -77,7 +88,7 @@ export function IncidentsScreen() {
             return (
               <div key={i.id} onClick={() => flash(`${i.id} — ${i.title}`)} className="flex cursor-pointer flex-wrap items-center gap-3.5 border-b border-ground px-5 py-3.5 hover:bg-[#fbfcfc]">
                 <span className="min-h-[34px] w-[3px] flex-none self-stretch rounded-full" style={{ background: tone.color }} />
-                <div className="min-w-0 flex-[1_1_260px]">
+                <div className="min-w-0 flex-[1_1_240px]">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-[0.4px]" style={{ color: tone.color, background: tone.bg }}>
                       <Icon name={tone.icon} size={11} />{i.severity}
@@ -89,11 +100,12 @@ export function IncidentsScreen() {
                     <span>Detected {i.detected}</span><span>·</span><span>{i.records}</span><span>·</span><span>{i.source}</span>
                   </div>
                 </div>
-                <div className="flex flex-none items-center gap-2.5">
+                <div className="flex flex-none items-center gap-2.5" onClick={(e) => e.stopPropagation()}>
                   <span className="whitespace-nowrap text-[11px] font-medium" style={{ color: i.notified ? "#16775a" : "#5b6b6e" }}>
                     {i.notified ? "Commission notified" : "Assessed as not notifiable"}
                   </span>
                   <span className="whitespace-nowrap rounded-full px-2.5 py-[3px] text-[11px] font-semibold" style={closed ? { color: "#16775a", background: "#e3f2ea" } : { color: "#2b5f9e", background: "#e8effa" }}>{i.stage}</span>
+                  <RowEdit onEdit={() => setDialog({ mode: "edit", row: i })} />
                   <RowRemove onConfirm={async () => { const res = await remove({ code: i.id }); flash(res.ok ? `Removed ${i.id}.` : res.error ?? "Could not remove."); }} />
                 </div>
               </div>
@@ -144,7 +156,15 @@ export function IncidentsScreen() {
         </aside>
       </div>
 
-      <AddRecordDialog open={adding} title="Log incident" fields={FIELDS} submitLabel="Log incident" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit incident" : "Log incident"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Log incident"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

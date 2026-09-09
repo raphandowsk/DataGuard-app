@@ -7,7 +7,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { SENSITIVE_NOTE } from "@/lib/data/sensitive";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { SENSITIVE_NOTE, type SensitiveRow } from "@/lib/data/sensitive";
 import { useSensitive, useRegisterActions } from "@/lib/supabase/operational";
 import { STATUS_TO_TONE, TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -25,11 +27,13 @@ const FIELDS: Field[] = [
   { name: "masked", label: "Masked at rest", type: "checkbox" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: SensitiveRow } | null;
+
 export function SensitiveScreen() {
   const { sensitive, live } = useSensitive();
-  const { insert, remove } = useRegisterActions("sensitive_data");
+  const { insert, remove, update } = useRegisterActions("sensitive_data");
   const flash = useUI((s) => s.flash);
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const gaps = sensitive.filter((r) => r.status !== "Complete").length;
   const masked = sensitive.filter((r) => r.masked).length;
@@ -39,11 +43,18 @@ export function SensitiveScreen() {
     { v: String(gaps), k: "Categories with gaps", sub: gaps ? "Missing basis or access" : "All complete" },
   ];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    cat: v.cat, activity: v.activity || null, subjects: v.subjects || null, n: v.n || null,
+    basis: v.basis || null, access: v.access || null, masked: Boolean(v.masked), status: v.status || "Gap",
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const res = await insert({
-      cat: v.cat, activity: v.activity || null, subjects: v.subjects || null, n: v.n || null,
-      basis: v.basis || null, access: v.access || null, masked: Boolean(v.masked), status: v.status || "Gap",
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ cat: dialog.row.cat }, cols(v));
+      if (res.ok) flash(`Updated ${v.cat}.`);
+      return res;
+    }
+    const res = await insert(cols(v));
     if (res.ok) flash(`Added ${v.cat}.`);
     return res;
   };
@@ -61,7 +72,7 @@ export function SensitiveScreen() {
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Sensitive categories</h2>
           <SourcePill live={live} />
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add category
           </button>
@@ -99,7 +110,12 @@ export function SensitiveScreen() {
                     <td className="max-w-[190px] px-3 py-3 [text-wrap:pretty]"><span className={r.masked ? "text-ink-mid" : "font-semibold text-crit-fg"}>{r.basis}</span></td>
                     <td className="max-w-[180px] px-3 py-3 text-ink-muted [text-wrap:pretty]">{r.access}</td>
                     <td className="px-3 py-3"><Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{r.status}</Pill></td>
-                    <td className="px-5 py-3 text-right"><RowRemove onConfirm={async () => { const res = await remove({ cat: r.cat }); flash(res.ok ? `Removed ${r.cat}.` : res.error ?? "Could not remove."); }} /></td>
+                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-0.5">
+                        <RowEdit onEdit={() => setDialog({ mode: "edit", row: r })} />
+                        <RowRemove onConfirm={async () => { const res = await remove({ cat: r.cat }); flash(res.ok ? `Removed ${r.cat}.` : res.error ?? "Could not remove."); }} />
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -108,7 +124,15 @@ export function SensitiveScreen() {
         </div>
       </section>
 
-      <AddRecordDialog open={adding} title="Add sensitive category" fields={FIELDS} submitLabel="Add category" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit sensitive category" : "Add sensitive category"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add category"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

@@ -18,28 +18,29 @@ interface Props {
   title: string;
   fields: Field[];
   submitLabel?: string;
+  initial?: Record<string, string | boolean>;
   onClose: () => void;
   onSubmit: (values: Record<string, string | boolean>) => Promise<{ ok: boolean; error?: string }>;
 }
 
-function initial(fields: Field[]): Record<string, string | boolean> {
+function blank(fields: Field[]): Record<string, string | boolean> {
   const v: Record<string, string | boolean> = {};
   for (const f of fields) v[f.name] = f.type === "checkbox" ? false : f.type === "select" ? f.options?.[0] ?? "" : "";
   return v;
 }
 
-export function AddRecordDialog({ open, title, fields, submitLabel = "Add", onClose, onSubmit }: Props) {
-  const [values, setValues] = useState<Record<string, string | boolean>>(() => initial(fields));
+export function AddRecordDialog({ open, title, fields, submitLabel = "Add", initial, onClose, onSubmit }: Props) {
+  const [values, setValues] = useState<Record<string, string | boolean>>(() => ({ ...blank(fields), ...initial }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setValues(initial(fields));
+      setValues({ ...blank(fields), ...initial });
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, initial]);
 
   if (!open) return null;
 

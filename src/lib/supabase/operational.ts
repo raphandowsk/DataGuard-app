@@ -314,7 +314,20 @@ export function useRegisterActions(table: RegisterTable) {
     [client, org, table],
   );
 
-  return { insert, remove };
+  const update = useCallback(
+    async (match: Record<string, unknown>, values: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> => {
+      if (!client || !org) return { ok: false, error: "No active workspace." };
+      let q = client.from(table).update(values as never).eq("org_id", org.id);
+      for (const [k, v] of Object.entries(match)) q = q.eq(k, v as never);
+      const { error } = await q;
+      if (error) return { ok: false, error: error.message };
+      useUI.getState().bumpData();
+      return { ok: true };
+    },
+    [client, org, table],
+  );
+
+  return { insert, remove, update };
 }
 
 export function useActivities() {

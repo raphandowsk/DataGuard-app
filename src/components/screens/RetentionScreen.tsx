@@ -7,7 +7,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { RETENTION_NOTE } from "@/lib/data/retention";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { RETENTION_NOTE, type RetentionRow } from "@/lib/data/retention";
 import { useRetention, useRegisterActions } from "@/lib/supabase/operational";
 import { STATUS_TO_TONE, TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -23,11 +25,13 @@ const FIELDS: Field[] = [
   { name: "status", label: "Status", type: "select", options: ["Gap", "Review", "Complete"] },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: RetentionRow } | null;
+
 export function RetentionScreen() {
   const { retention, live } = useRetention();
-  const { insert, remove } = useRegisterActions("retention_schedule");
+  const { insert, remove, update } = useRegisterActions("retention_schedule");
   const flash = useUI((s) => s.flash);
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const overdue = retention.filter((r) => (r.next || "").includes("Overdue")).length;
   const noLaw = retention.filter((r) => (r.source || "").includes("no statutory source") || (r.source || "").includes("no fixed period")).length;
@@ -37,11 +41,18 @@ export function RetentionScreen() {
     { v: String(noLaw), k: "No statutory source", sub: noLaw ? "Justify or shorten" : "All sourced" },
   ];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    record: v.record, period: v.period || null, source: v.source || null,
+    disposal: v.disposal || null, next: v.next || null, status: v.status || "Gap",
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const res = await insert({
-      record: v.record, period: v.period || null, source: v.source || null,
-      disposal: v.disposal || null, next: v.next || null, status: v.status || "Gap",
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ record: dialog.row.record }, cols(v));
+      if (res.ok) flash(`Updated ${v.record}.`);
+      return res;
+    }
+    const res = await insert(cols(v));
     if (res.ok) flash(`Added ${v.record}.`);
     return res;
   };
@@ -59,7 +70,7 @@ export function RetentionScreen() {
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Schedule</h2>
           <SourcePill live={live} />
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add record type
           </button>
@@ -95,7 +106,12 @@ export function RetentionScreen() {
                     <td className="max-w-[160px] px-3 py-3 text-ink-muted [text-wrap:pretty]">{r.disposal}</td>
                     <td className="px-3 py-3 font-medium" style={{ color: (r.next || "").includes("Overdue") ? "#b23a2f" : "#5b6b6e" }}>{r.next}</td>
                     <td className="px-3 py-3"><Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{r.status}</Pill></td>
-                    <td className="px-5 py-3 text-right"><RowRemove onConfirm={async () => { const res = await remove({ record: r.record }); flash(res.ok ? `Removed ${r.record}.` : res.error ?? "Could not remove."); }} /></td>
+                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-0.5">
+                        <RowEdit onEdit={() => setDialog({ mode: "edit", row: r })} />
+                        <RowRemove onConfirm={async () => { const res = await remove({ record: r.record }); flash(res.ok ? `Removed ${r.record}.` : res.error ?? "Could not remove."); }} />
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -104,7 +120,15 @@ export function RetentionScreen() {
         </div>
       </section>
 
-      <AddRecordDialog open={adding} title="Add record type" fields={FIELDS} submitLabel="Add record type" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit record type" : "Add record type"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add record type"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

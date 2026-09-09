@@ -7,7 +7,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { CONSENT_NOTE } from "@/lib/data/consent";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { CONSENT_NOTE, type ConsentRow } from "@/lib/data/consent";
 import { useConsent, useRegisterActions } from "@/lib/supabase/operational";
 import { STATUS_TO_TONE, TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -22,11 +24,13 @@ const FIELDS: Field[] = [
   { name: "updated", label: "Last updated", placeholder: "e.g. 14 Mar 2026" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: ConsentRow } | null;
+
 export function ConsentScreen() {
   const flash = useUI((s) => s.flash);
   const { consent, live } = useConsent();
-  const { insert, remove } = useRegisterActions("consent_records");
-  const [adding, setAdding] = useState(false);
+  const { insert, remove, update } = useRegisterActions("consent_records");
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const review = consent.filter((c) => c.status !== "Complete").length;
   const stats = [
@@ -35,11 +39,18 @@ export function ConsentScreen() {
     { v: String(review), k: "Need review", sub: review ? "Missing wording or records" : "All complete" },
   ];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    purpose: v.purpose, version: v.version || null, method: v.method || null, held: v.held || null,
+    withdrawn: v.withdrawn || null, updated: v.updated || null, status: v.status || "Gap",
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const res = await insert({
-      purpose: v.purpose, version: v.version || null, method: v.method || null, held: v.held || null,
-      withdrawn: v.withdrawn || null, updated: v.updated || null, status: v.status || "Gap",
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ purpose: dialog.row.purpose }, cols(v));
+      if (res.ok) flash("Updated consent record.");
+      return res;
+    }
+    const res = await insert(cols(v));
     if (res.ok) flash("Added consent record.");
     return res;
   };
@@ -52,7 +63,7 @@ export function ConsentScreen() {
         <Icon name="info" size={16} className="flex-none text-ink-muted" />
         <p className="m-0 flex-1 text-[12px] leading-[1.55] text-ink-mid">{CONSENT_NOTE}</p>
         <SourcePill live={live} />
-        <button onClick={() => setAdding(true)} className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+        <button onClick={() => setDialog({ mode: "add" })} className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
           <Icon name="plus" size={14} className="flex-none" />
           Add record
         </button>
@@ -72,6 +83,7 @@ export function ConsentScreen() {
               <div className="mb-3.5 flex items-start gap-2.5">
                 <h2 className="m-0 flex-1 text-[14px] font-semibold leading-[1.35] [text-wrap:pretty]">{c.purpose}</h2>
                 <Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{c.status}</Pill>
+                <RowEdit onEdit={() => setDialog({ mode: "edit", row: c })} />
                 <RowRemove onConfirm={async () => { const res = await remove({ purpose: c.purpose }); flash(res.ok ? "Removed consent record." : res.error ?? "Could not remove."); }} />
               </div>
               <div className="mb-3.5 flex gap-5 border-y border-ground py-3.5">
@@ -101,7 +113,15 @@ export function ConsentScreen() {
         })}
       </div>
 
-      <AddRecordDialog open={adding} title="Add consent record" fields={FIELDS} submitLabel="Add record" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit consent record" : "Add consent record"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add record"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

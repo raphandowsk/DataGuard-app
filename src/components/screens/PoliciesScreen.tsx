@@ -7,6 +7,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { type Policy } from "@/lib/data/records";
 import { usePolicies, useRegisterActions } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -23,11 +26,13 @@ const FIELDS: Field[] = [
   { name: "controls", label: "Controls supported", placeholder: "e.g. 8", full: true },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: Policy } | null;
+
 export function PoliciesScreen() {
   const { policies, live } = usePolicies();
-  const { insert, remove } = useRegisterActions("policies");
+  const { insert, remove, update } = useRegisterActions("policies");
   const flash = useUI((s) => s.flash);
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const current = policies.filter((p) => p.status === "Current").length;
   const attention = policies.filter((p) => p.status === "Expired" || p.status === "Missing").length;
@@ -37,11 +42,18 @@ export function PoliciesScreen() {
     { v: String(attention), k: "Expired or missing", sub: attention ? "Weak evidence" : "None" },
   ];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    name: v.name, version: v.version || null, owner: v.owner || null, approved: v.approved || null,
+    next: v.next || null, controls: Number(v.controls || 0), status: v.status || "Draft",
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const res = await insert({
-      name: v.name, version: v.version || null, owner: v.owner || null, approved: v.approved || null,
-      next: v.next || null, controls: Number(v.controls || 0), status: v.status || "Draft",
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ name: dialog.row.name }, cols(v));
+      if (res.ok) flash(`Updated ${v.name}.`);
+      return res;
+    }
+    const res = await insert(cols(v));
     if (res.ok) flash(`Added ${v.name}.`);
     return res;
   };
@@ -54,7 +66,7 @@ export function PoliciesScreen() {
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Policies and procedures</h2>
           <SourcePill live={live} />
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add policy
           </button>
@@ -88,7 +100,12 @@ export function PoliciesScreen() {
                     <td className="px-3 py-3 font-medium" style={{ color: (p.next || "").includes("Overdue") ? "#b23a2f" : "#5b6b6e" }}>{p.next}</td>
                     <td className="tnum px-3 py-3 text-center font-medium">{p.controls}</td>
                     <td className="px-3 py-3"><Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{p.status}</Pill></td>
-                    <td className="px-5 py-3 text-right"><RowRemove onConfirm={async () => { const res = await remove({ name: p.name }); flash(res.ok ? `Removed ${p.name}.` : res.error ?? "Could not remove."); }} /></td>
+                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-0.5">
+                        <RowEdit onEdit={() => setDialog({ mode: "edit", row: p })} />
+                        <RowRemove onConfirm={async () => { const res = await remove({ name: p.name }); flash(res.ok ? `Removed ${p.name}.` : res.error ?? "Could not remove."); }} />
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -97,7 +114,15 @@ export function PoliciesScreen() {
         </div>
       </section>
 
-      <AddRecordDialog open={adding} title="Add policy" fields={FIELDS} submitLabel="Add policy" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit policy" : "Add policy"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add policy"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

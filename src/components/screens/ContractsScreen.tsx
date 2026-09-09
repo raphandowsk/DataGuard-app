@@ -7,7 +7,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { CLAUSES, CONTRACT_NOTE } from "@/lib/data/processors";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { CLAUSES, CONTRACT_NOTE, type Contract } from "@/lib/data/processors";
 import { useContracts, useRegisterActions } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -24,11 +26,13 @@ const FIELDS: Field[] = [
   { name: "expires", label: "Expires", placeholder: "e.g. 12 Mar 2028" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: Contract } | null;
+
 export function ContractsScreen() {
   const { contracts, live } = useContracts();
-  const { insert, remove } = useRegisterActions("contracts");
+  const { insert, remove, update } = useRegisterActions("contracts");
   const flash = useUI((s) => s.flash);
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const full = contracts.filter((c) => c.have === 7).length;
   const missing = contracts.filter((c) => c.tone === "bad" || c.have < 7).length;
@@ -38,12 +42,18 @@ export function ContractsScreen() {
     { v: String(missing), k: "Need attention", sub: missing ? "Missing clauses or unsigned" : "All complete" },
   ];
 
-  const onSubmit = async (v: Record<string, string | boolean>) => {
+  const cols = (v: Record<string, string | boolean>) => {
     const status = (v.status as string) || "No contract";
-    const res = await insert({
-      processor: v.processor, status, tone: toneFor(status), have: Number(v.have || 0),
-      signed: v.signed || null, expires: v.expires || null,
-    });
+    return { processor: v.processor, status, tone: toneFor(status), have: Number(v.have || 0), signed: v.signed || null, expires: v.expires || null };
+  };
+
+  const onSubmit = async (v: Record<string, string | boolean>) => {
+    if (dialog?.mode === "edit") {
+      const res = await update({ processor: dialog.row.processor }, cols(v));
+      if (res.ok) flash(`Updated contract for ${v.processor}.`);
+      return res;
+    }
+    const res = await insert(cols(v));
     if (res.ok) flash(`Added contract for ${v.processor}.`);
     return res;
   };
@@ -70,7 +80,7 @@ export function ContractsScreen() {
         <div className="flex items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Contracts by processor</h2>
           <SourcePill live={live} />
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add contract
           </button>
@@ -107,7 +117,12 @@ export function ContractsScreen() {
                     </td>
                     <td className="px-3 py-3 text-ink-muted">{c.signed}</td>
                     <td className="px-3 py-3 text-ink-muted">{c.expires}</td>
-                    <td className="px-5 py-3 text-right"><RowRemove onConfirm={async () => { const res = await remove({ processor: c.processor }); flash(res.ok ? `Removed contract for ${c.processor}.` : res.error ?? "Could not remove."); }} /></td>
+                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-0.5">
+                        <RowEdit onEdit={() => setDialog({ mode: "edit", row: c })} />
+                        <RowRemove onConfirm={async () => { const res = await remove({ processor: c.processor }); flash(res.ok ? `Removed contract for ${c.processor}.` : res.error ?? "Could not remove."); }} />
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -116,7 +131,15 @@ export function ContractsScreen() {
         </div>
       </section>
 
-      <AddRecordDialog open={adding} title="Add contract" fields={FIELDS} submitLabel="Add contract" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit contract" : "Add contract"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add contract"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

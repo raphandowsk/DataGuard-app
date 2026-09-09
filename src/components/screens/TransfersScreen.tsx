@@ -6,7 +6,9 @@ import { Pill } from "@/components/ui/Pill";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { TRANSFER_NOTE } from "@/lib/data/transfers";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { TRANSFER_NOTE, type Transfer } from "@/lib/data/transfers";
 import { useTransfers, useRegisterActions } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -25,19 +27,26 @@ const FIELDS: Field[] = [
   { name: "note", label: "Note", type: "textarea", placeholder: "Context for the recorded decision", full: true },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: Transfer } | null;
+
 export function TransfersScreen() {
   const flash = useUI((s) => s.flash);
   const { transfers, live } = useTransfers();
-  const { insert, remove } = useRegisterActions("transfers");
-  const [adding, setAdding] = useState(false);
+  const { insert, remove, update } = useRegisterActions("transfers");
+  const [dialog, setDialog] = useState<Dialog>(null);
+
+  const cols = (v: Record<string, string | boolean>) => {
+    const status = (v.status as string) || "Not assessed";
+    return { dest: v.dest, processor: v.processor || null, data: v.data || null, volume: v.volume || null, basis: v.basis || null, status, tone: toneFor(status), owner: v.owner || null, note: v.note || null };
+  };
 
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const code = "TR-" + Math.random().toString(36).slice(2, 6).toUpperCase();
-    const status = (v.status as string) || "Not assessed";
-    const res = await insert({
-      code, dest: v.dest, processor: v.processor || null, data: v.data || null, volume: v.volume || null,
-      basis: v.basis || null, status, tone: toneFor(status), owner: v.owner || null, note: v.note || null,
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ code: dialog.row.id }, cols(v));
+      if (res.ok) flash(`Updated transfer to ${v.dest}.`);
+      return res;
+    }
+    const res = await insert({ code: "TR-" + Math.random().toString(36).slice(2, 6).toUpperCase(), ...cols(v) });
     if (res.ok) flash(`Added transfer to ${v.dest}.`);
     return res;
   };
@@ -48,7 +57,7 @@ export function TransfersScreen() {
         <Icon name="info" size={16} className="flex-none text-ink-muted" />
         <p className="m-0 flex-1 text-[12px] leading-[1.55] text-ink-mid">{TRANSFER_NOTE}</p>
         <SourcePill live={live} />
-        <button onClick={() => setAdding(true)} className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+        <button onClick={() => setDialog({ mode: "add" })} className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
           <Icon name="plus" size={14} className="flex-none" />
           Add transfer
         </button>
@@ -68,7 +77,10 @@ export function TransfersScreen() {
               <div className="mb-3.5 flex flex-wrap items-center gap-2.5">
                 <span className="rounded-[5px] border border-line bg-panel px-[7px] py-0.5 font-mono text-[10.5px] text-ink-muted">{t.id}</span>
                 <Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{t.status}</Pill>
-                <span className="ml-auto"><RowRemove onConfirm={async () => { const res = await remove({ code: t.id }); flash(res.ok ? `Removed transfer ${t.id}.` : res.error ?? "Could not remove."); }} /></span>
+                <span className="ml-auto inline-flex items-center gap-0.5">
+                  <RowEdit onEdit={() => setDialog({ mode: "edit", row: t })} />
+                  <RowRemove onConfirm={async () => { const res = await remove({ code: t.id }); flash(res.ok ? `Removed transfer ${t.id}.` : res.error ?? "Could not remove."); }} />
+                </span>
               </div>
               <div className="mb-4 flex items-center gap-3">
                 <div className="text-center">
@@ -103,7 +115,15 @@ export function TransfersScreen() {
         })}
       </div>
 
-      <AddRecordDialog open={adding} title="Add cross-border transfer" fields={FIELDS} submitLabel="Add transfer" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit transfer" : "Add cross-border transfer"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add transfer"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }

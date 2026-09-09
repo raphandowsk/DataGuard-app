@@ -6,7 +6,9 @@ import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
 import { AddRecordDialog, type Field } from "@/components/shell/AddRecordDialog";
 import { RowRemove } from "@/components/screens/RowRemove";
-import { EVIDENCE_NOTE, evidenceIcon } from "@/lib/data/records";
+import { RowEdit } from "@/components/screens/RowEdit";
+import { prefillFrom } from "@/components/screens/prefill";
+import { EVIDENCE_NOTE, evidenceIcon, type Evidence } from "@/lib/data/records";
 import { useEvidence, useRegisterActions } from "@/lib/supabase/operational";
 import { TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -22,11 +24,13 @@ const FIELDS: Field[] = [
   { name: "size", label: "Size", placeholder: "e.g. 340 KB" },
 ];
 
+type Dialog = { mode: "add" } | { mode: "edit"; row: Evidence } | null;
+
 export function EvidenceScreen() {
   const { evidence, live } = useEvidence();
-  const { insert, remove } = useRegisterActions("evidence");
+  const { insert, remove, update } = useRegisterActions("evidence");
   const flash = useUI((s) => s.flash);
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<Dialog>(null);
 
   const strong = evidence.filter((e) => e.strength === "Strong").length;
   const missing = evidence.filter((e) => e.strength === "Missing").length;
@@ -38,11 +42,18 @@ export function EvidenceScreen() {
     { v: String(expiring), k: "Expiring or superseded", sub: expiring ? "Review soon" : "None" },
   ];
 
+  const cols = (v: Record<string, string | boolean>) => ({
+    name: v.name, kind: v.kind || null, owner: v.owner || null, strength: v.strength || "Weak",
+    added: v.added || null, expiry: v.expiry || null, controls: Number(v.controls || 0), size: v.size || null,
+  });
+
   const onSubmit = async (v: Record<string, string | boolean>) => {
-    const res = await insert({
-      name: v.name, kind: v.kind || null, owner: v.owner || null, strength: v.strength || "Weak",
-      added: v.added || null, expiry: v.expiry || null, controls: Number(v.controls || 0), size: v.size || null,
-    });
+    if (dialog?.mode === "edit") {
+      const res = await update({ name: dialog.row.name }, cols(v));
+      if (res.ok) flash(`Updated ${v.name}.`);
+      return res;
+    }
+    const res = await insert(cols(v));
     if (res.ok) flash(`Added ${v.name}.`);
     return res;
   };
@@ -60,7 +71,7 @@ export function EvidenceScreen() {
         <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-4">
           <h2 className="m-0 flex-1 text-[13px] font-semibold">Documents</h2>
           <SourcePill live={live} />
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
+          <button onClick={() => setDialog({ mode: "add" })} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-teal-dark">
             <Icon name="plus" size={14} className="flex-none" />
             Add document
           </button>
@@ -86,13 +97,14 @@ export function EvidenceScreen() {
                   <span>{e.kind}</span><span>·</span><span>{e.owner}</span><span>·</span><span>Added {e.added}</span><span>·</span><span>{e.size}</span>
                 </div>
               </div>
-              <div className="flex flex-none items-center gap-3.5">
+              <div className="flex flex-none items-center gap-3.5" onClick={(ev) => ev.stopPropagation()}>
                 <div className="text-right">
                   <div className="tnum text-[12px] font-semibold">{e.controls}</div>
                   <div className="text-[10.5px] text-ink-faint">controls</div>
                 </div>
                 <span className="whitespace-nowrap text-[11px]" style={{ color: expiryColor }}>{e.expiry}</span>
                 <span className="whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold" style={{ color: tone.color, background: tone.bg }}>{e.strength}</span>
+                <RowEdit onEdit={() => setDialog({ mode: "edit", row: e })} />
                 <RowRemove onConfirm={async () => { const res = await remove({ name: e.name }); flash(res.ok ? `Removed ${e.name}.` : res.error ?? "Could not remove."); }} />
               </div>
             </div>
@@ -100,7 +112,15 @@ export function EvidenceScreen() {
         })}
       </section>
 
-      <AddRecordDialog open={adding} title="Add evidence document" fields={FIELDS} submitLabel="Add document" onClose={() => setAdding(false)} onSubmit={onSubmit} />
+      <AddRecordDialog
+        open={!!dialog}
+        title={dialog?.mode === "edit" ? "Edit document" : "Add evidence document"}
+        submitLabel={dialog?.mode === "edit" ? "Save changes" : "Add document"}
+        fields={FIELDS}
+        initial={dialog?.mode === "edit" ? prefillFrom(FIELDS, dialog.row as unknown as Record<string, unknown>) : undefined}
+        onClose={() => setDialog(null)}
+        onSubmit={onSubmit}
+      />
     </div>
   );
 }
