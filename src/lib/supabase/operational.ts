@@ -179,7 +179,20 @@ export function useTasks() {
     [client, org, tasks],
   );
 
-  return { tasks, source, setStatus, createFromControl, live: source === "live" };
+  /** Delete a task by code (used to undo a remediation task). */
+  const removeTask = useCallback(
+    async (code: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!client || !org) return { ok: false, error: "No active workspace." };
+      const { error } = await client.from("tasks").delete().eq("org_id", org.id).eq("code", code);
+      if (error) return { ok: false, error: error.message };
+      useUI.getState().bumpData();
+      setTasks((prev) => prev.filter((t) => t.id !== code));
+      return { ok: true };
+    },
+    [client, org],
+  );
+
+  return { tasks, source, setStatus, createFromControl, removeTask, live: source === "live" };
 }
 
 export function useRisks() {

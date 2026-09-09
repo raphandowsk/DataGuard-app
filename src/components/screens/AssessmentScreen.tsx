@@ -13,7 +13,7 @@ import { useUI } from "@/lib/store";
 export function AssessmentScreen() {
   const { list, total } = useControls();
   const { client, userId } = useAuth();
-  const { createFromControl } = useTasks();
+  const { tasks, createFromControl, removeTask } = useTasks();
   const controlId = useUI((s) => s.controlId);
   const assessCat = useUI((s) => s.assessCat);
   const answers = useUI((s) => s.answers);
@@ -49,6 +49,7 @@ export function AssessmentScreen() {
   const tone = RISK_TONE[q.risk] ?? RISK_TONE.MEDIUM;
   const answer = answers[q.id];
   const answered = !!answer;
+  const remediationTask = tasks.find((t) => t.control === q.id);
   const progressLabel = `${idx + 1} of ${queue.length} in this domain · ${total} in the framework`;
   const progressPct = queue.length ? Math.round(((idx + 1) / queue.length) * 100) : 0;
 
@@ -282,22 +283,51 @@ export function AssessmentScreen() {
             <h3 className="m-0 text-[12.5px] font-semibold" style={{ color: "#5f3512" }}>Remediation</h3>
           </div>
           <p className="m-0 mb-3 text-[12px] leading-[1.6] [text-wrap:pretty]" style={{ color: "#5f3512" }}>{q.remediation}</p>
-          <button
-            onClick={async () => {
-              const res = await createFromControl({ id: q.id, title: q.title, task: q.task, risk: q.risk, remediation: q.remediation });
-              if (!res.ok) {
-                useUI.getState().flash(res.error);
-                return;
-              }
-              useUI.getState().flash(res.created ? `Task created: ${q.task}` : "A remediation task already exists for this control.");
-              useUI.getState().go("tasks");
-            }}
-            className="flex w-full items-center justify-center gap-[7px] rounded-full border border-[#dcc3a6] bg-surface px-3 py-2 text-[12px] font-semibold hover:border-[#c67139]"
-            style={{ color: "#5f3512" }}
-          >
-            <Icon name="plus" size={14} />
-            Create remediation task
-          </button>
+          {remediationTask ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 rounded-[11px] border border-[#dcc3a6] bg-surface px-3 py-2 text-[12px] font-medium" style={{ color: "#5f3512" }}>
+                <Icon name="circle-check" size={14} className="flex-none text-good-fg" />
+                <span className="min-w-0 flex-1">
+                  Task created · <span className="font-semibold">{remediationTask.id}</span> ({remediationTask.status})
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => useUI.getState().go("tasks")}
+                  className="flex-1 rounded-full border border-[#dcc3a6] bg-surface px-3 py-2 text-[12px] font-semibold hover:border-[#c67139]"
+                  style={{ color: "#5f3512" }}
+                >
+                  View task
+                </button>
+                <button
+                  onClick={async () => {
+                    const res = await removeTask(remediationTask.id);
+                    useUI.getState().flash(res.ok ? "Remediation task removed." : res.error ?? "Could not remove the task.");
+                  }}
+                  className="flex items-center justify-center gap-1.5 rounded-full border border-[#e3b5ae] bg-surface px-3 py-2 text-[12px] font-semibold text-crit-fg hover:border-alert"
+                >
+                  <Icon name="trash-2" size={13} />
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={async () => {
+                const res = await createFromControl({ id: q.id, title: q.title, task: q.task, risk: q.risk, remediation: q.remediation });
+                if (!res.ok) {
+                  useUI.getState().flash(res.error);
+                  return;
+                }
+                useUI.getState().flash(res.created ? `Task created: ${q.task}` : "A remediation task already exists for this control.");
+              }}
+              className="flex w-full items-center justify-center gap-[7px] rounded-full border border-[#dcc3a6] bg-surface px-3 py-2 text-[12px] font-semibold hover:border-[#c67139]"
+              style={{ color: "#5f3512" }}
+            >
+              <Icon name="plus" size={14} />
+              Create remediation task
+            </button>
+          )}
         </div>
       </aside>
     </div>
