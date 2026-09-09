@@ -78,7 +78,7 @@ export function useTasks() {
   const { client, email } = useAuth();
   const { org, source: orgSource } = useActiveOrg();
   const dataRev = useUI((s) => s.dataRev);
-  const [tasks, setTasks] = useState<Task[]>(TASK_FIXTURES);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [source, setSource] = useState<Source>("loading");
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export function useTasks() {
       .order("display_order", { ascending: true })
       .then(({ data, error }) => {
         if (cancelled || error || !data) {
-          if (!cancelled) { setTasks(TASK_FIXTURES); setSource("fixtures"); }
+          if (!cancelled) { setTasks([]); setSource("live"); }
           return;
         }
         setTasks(
@@ -198,7 +198,7 @@ export function useTasks() {
 export function useRisks() {
   const { client } = useAuth();
   const { org, source: orgSource } = useActiveOrg();
-  const [risks, setRisks] = useState<Risk[]>(RISK_FIXTURES);
+  const [risks, setRisks] = useState<Risk[]>([]);
   const [source, setSource] = useState<Source>("loading");
 
   useEffect(() => {
@@ -216,7 +216,7 @@ export function useRisks() {
       .order("display_order", { ascending: true })
       .then(({ data, error }) => {
         if (cancelled || error || !data) {
-          if (!cancelled) { setRisks(RISK_FIXTURES); setSource("fixtures"); }
+          if (!cancelled) { setRisks([]); setSource("live"); }
           return;
         }
         setRisks(
@@ -258,7 +258,9 @@ function useRegister<T>(
   const { client } = useAuth();
   const { org, source: orgSource } = useActiveOrg();
   const dataRev = useUI((s) => s.dataRev);
-  const [rows, setRows] = useState<T[]>(fixture);
+  // Start empty, never with fixtures — a signed-in user must only ever see their
+  // own org's live rows (or a clean empty state), not the demo sample data.
+  const [rows, setRows] = useState<T[]>([]);
   const [source, setSource] = useState<Source>("loading");
 
   useEffect(() => {
@@ -276,7 +278,7 @@ function useRegister<T>(
       .order(orderBy.col, { ascending: orderBy.ascending })
       .then(({ data, error }) => {
         if (cancelled) return;
-        if (error || !data) { setRows(fixture); setSource("fixtures"); return; }
+        if (error || !data) { setRows([]); setSource("live"); return; }
         setRows((data as unknown as Array<Record<string, unknown>>).map(map));
         setSource("live");
       });
@@ -549,7 +551,7 @@ export function useTransfers() {
 /** All organisations the consultant can see (for the portfolio). */
 export function useOrganisations() {
   const { client, userId, ready } = useAuth();
-  const [orgs, setOrgs] = useState<Client[]>(CLIENT_FIXTURES);
+  const [orgs, setOrgs] = useState<Client[]>([]);
   const [source, setSource] = useState<Source>("loading");
 
   useEffect(() => {
@@ -566,7 +568,7 @@ export function useOrganisations() {
       .order("coverage_pct", { ascending: true })
       .then(({ data, error }) => {
         if (cancelled || error || !data) {
-          if (!cancelled) { setOrgs(CLIENT_FIXTURES); setSource("fixtures"); }
+          if (!cancelled) { setOrgs([]); setSource("live"); }
           return;
         }
         setOrgs(

@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowser, type SupaClient } from "./client";
 import { fetchAnswers } from "./answers";
+import { resetOrgCache } from "./operational";
 import { useUI } from "@/lib/store";
 
 interface AuthValue {
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sb = getSupabaseBrowser();
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const lastUid = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     if (!sb) {
@@ -36,16 +38,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, [sb]);
 
-  // Hydrate saved answers whenever a user becomes signed in.
+  // Keep per-user state clean across account switches, and hydrate the signed-in
+  // user's saved answers. When the account changes (or signs out) we wipe the
+  // previous user's answers and cached org so nothing leaks between accounts;
+  // hydration then REPLACES (not merges) with this user's own saved work.
   useEffect(() => {
-    if (!sb || !session) return;
+    if (!sb) return;
+    const uid = session?.user.id ?? null;
+    if (lastUid.current !== uid) {
+      lastUid.current = uid;
+      useUI.getState().hydrateAnswers({}, {});
+      resetOrgCache();
+      useUI.getState().bumpData();
+    }
+    if (!session) return;
     let cancelled = false;
     fetchAnswers(sb)
       .then(({ answers, notes }) => {
-        if (cancelled) return;
-        // Merge saved answers over the demo defaults so returning users see their work.
-        const cur = useUI.getState();
-        useUI.getState().hydrateAnswers({ ...cur.answers, ...answers }, { ...cur.notesById, ...notes });
+        if (!cancelled) useUI.getState().hydrateAnswers(answers, notes);
       })
       .catch(() => {});
     return () => {
