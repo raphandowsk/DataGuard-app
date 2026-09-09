@@ -572,3 +572,83 @@ export function useNavCounts(): Partial<Record<string, number>> {
     policies: policies.filter((p) => p.status !== "Current").length,
   };
 }
+
+export interface OrgMember { userId: string; email: string; role: string; isYou: boolean; }
+export interface OrgInvite { id: string; email: string; role: string; status: string; }
+
+// Loose rpc signature that keeps `this` bound (call as a member of the client).
+type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
+
+/** Team, invitations and workspace administration for the Settings module. */
+export function useOrgAdmin() {
+  const { client } = useAuth();
+  const { org } = useActiveOrg();
+  const dataRev = useUI((s) => s.dataRev);
+  const [members, setMembers] = useState<OrgMember[]>([]);
+  const [invites, setInvites] = useState<OrgInvite[]>([]);
+
+  useEffect(() => {
+    if (!client || !org) { setMembers([]); setInvites([]); return; }
+    let cancelled = false;
+    (client as unknown as RpcClient).rpc("list_org_members", { p_org: org.id }).then(({ data }) => {
+      if (cancelled || !data) return;
+      setMembers((data as Array<{ user_id: string; email: string; role: string; is_you: boolean }>).map((r) => ({ userId: r.user_id, email: r.email, role: r.role, isYou: r.is_you })));
+    });
+    client.from("org_invitations").select("id,email,role,status").eq("org_id", org.id).order("created_at", { ascending: true }).then(({ data }) => {
+      if (cancelled || !data) return;
+      setInvites((data as unknown as Array<{ id: string; email: string; role: string; status: string }>).map((r) => ({ id: r.id, email: r.email, role: r.role, status: r.status })));
+    });
+    return () => { cancelled = true; };
+  }, [client, org, dataRev]);
+
+  const updateProfile = useCallback(async (name: string, sector: string) => {
+    if (!client || !org) return { ok: false, error: "No active workspace." };
+    const { error } = await client.from("organisations").update({ name, sector: sector || null } as never).eq("id", org.id);
+    if (error) return { ok: false, error: error.message };
+    resetOrgCache(); useUI.getState().bumpData(); return { ok: true };
+  }, [client, org]);
+
+  const setRole = useCallback(async (userId: string, role: string) => {
+    if (!client || !org) return { ok: false, error: "No active workspace." };
+    const { error } = await client.from("organisation_members").update({ role } as never).eq("org_id", org.id).eq("user_id", userId);
+    if (error) return { ok: false, error: error.message };
+    useUI.getState().bumpData(); return { ok: true };
+  }, [client, org]);
+
+  const removeMember = useCallback(async (userId: string) => {
+    if (!client || !org) return { ok: false, error: "No active workspace." };
+    const { error } = await client.from("organisation_members").delete().eq("org_id", org.id).eq("user_id", userId);
+    if (error) return { ok: false, error: error.message };
+    useUI.getState().bumpData(); return { ok: true };
+  }, [client, org]);
+
+  const invite = useCallback(async (email: string, role: string) => {
+    if (!client || !org) return { ok: false, error: "No active workspace." };
+    const { error } = await client.from("org_invitations").insert({ org_id: org.id, email, role, status: "pending" } as never);
+    if (error) return { ok: false, error: error.message };
+    useUI.getState().bumpData(); return { ok: true };
+  }, [client, org]);
+
+  const cancelInvite = useCallback(async (id: string) => {
+    if (!client || !org) return { ok: false, error: "No active workspace." };
+    const { error } = await client.from("org_invitations").delete().eq("org_id", org.id).eq("id", id);
+    if (error) return { ok: false, error: error.message };
+    useUI.getState().bumpData(); return { ok: true };
+  }, [client, org]);
+
+  const deleteWorkspace = useCallback(async () => {
+    if (!client || !org) return { ok: false, error: "No active workspace." };
+    const { error } = await (client as unknown as RpcClient).rpc("delete_org", { p_org: org.id });
+    if (error) return { ok: false, error: error.message };
+    resetOrgCache(); return { ok: true };
+  }, [client, org]);
+
+  const leaveWorkspace = useCallback(async (userId: string) => {
+    if (!client || !org) return { ok: false, error: "No active workspace." };
+    const { error } = await client.from("organisation_members").delete().eq("org_id", org.id).eq("user_id", userId);
+    if (error) return { ok: false, error: error.message };
+    resetOrgCache(); return { ok: true };
+  }, [client, org]);
+
+  return { members, invites, updateProfile, setRole, removeMember, invite, cancelInvite, deleteWorkspace, leaveWorkspace };
+}

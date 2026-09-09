@@ -132,6 +132,12 @@ export type Database = {
         Update: Record<string, unknown>
         Relationships: []
       }
+      org_invitations: {
+        Row: { id: string; org_id: string; email: string; role: string; status: string; invited_by: string | null; created_at: string | null }
+        Insert: Record<string, unknown>
+        Update: Record<string, unknown>
+        Relationships: []
+      }
       tasks: {
         Row: {
           id: string
@@ -310,6 +316,14 @@ export type Database = {
       provision_org: {
         Args: { p_name: string; p_sector: string }
         Returns: string
+      }
+      list_org_members: {
+        Args: { p_org: string }
+        Returns: { user_id: string; email: string; role: string; is_you: boolean }[]
+      }
+      delete_org: {
+        Args: { p_org: string }
+        Returns: undefined
       }
     }
     Enums: { [_ in never]: never }
