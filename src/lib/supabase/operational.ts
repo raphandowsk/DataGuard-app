@@ -135,15 +135,19 @@ export function useTasks() {
    * to the tasks table and updates local state optimistically.
    */
   const createFromControl = useCallback(
-    async (c: { id: string; title: string; task: string; risk: string; remediation: string }): Promise<
-      { ok: true; created: boolean } | { ok: false; error: string }
-    > => {
+    async (
+      c: { id: string; title: string; task: string; risk: string; remediation: string },
+      opts?: { owner?: string; due?: string; overdue?: boolean },
+    ): Promise<{ ok: true; created: boolean } | { ok: false; error: string }> => {
       if (!client || !org) return { ok: false, error: "No active workspace." };
       const existing = tasks.find((t) => t.control === c.id);
       if (existing) return { ok: true, created: false };
 
       const code = `RT-${c.id}`;
       const priority = c.risk as Task["priority"];
+      const owner = opts?.owner?.trim() || "";
+      const due = opts?.due?.trim() || "";
+      const overdue = opts?.overdue ?? false;
       const row = {
         org_id: org.id,
         code,
@@ -151,8 +155,10 @@ export function useTasks() {
         control_id: c.id,
         priority,
         status: "Open",
+        owner: owner || null,
+        due: due || null,
         reason: c.remediation,
-        overdue: false,
+        overdue,
         display_order: tasks.length + 1,
       };
       const { error } = await client.from("tasks").insert(row as never);
@@ -162,17 +168,7 @@ export function useTasks() {
       useUI.getState().bumpData();
       setTasks((prev) => [
         ...prev,
-        {
-          id: code,
-          title: row.title,
-          control: c.id,
-          priority,
-          status: "Open",
-          owner: "",
-          due: "",
-          overdue: false,
-          reason: c.remediation,
-        },
+        { id: code, title: row.title, control: c.id, priority, status: "Open", owner, due, overdue, reason: c.remediation },
       ]);
       return { ok: true, created: true };
     },
