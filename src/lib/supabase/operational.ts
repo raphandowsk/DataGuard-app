@@ -437,3 +437,28 @@ export function useOrganisations() {
 
   return { orgs, source, live: source === "live" };
 }
+
+/**
+ * Live "needs attention" counts for the sidebar badges, keyed by screen id.
+ * Each count reflects the active org's own records; an empty org yields zeros
+ * (the badge is then hidden), so the numbers always match the section content.
+ */
+export function useNavCounts(): Partial<Record<string, number>> {
+  const { tasks } = useTasks();
+  const { requests } = useRights();
+  const { sensitive } = useSensitive();
+  const { transfers } = useTransfers();
+  const { processors } = useProcessors();
+  const { contracts } = useContracts();
+  const { policies } = usePolicies();
+
+  return {
+    tasks: tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled").length,
+    rights: requests.filter((r) => r.stage !== "Closed").length,
+    sensitive: sensitive.filter((s) => s.status !== "Complete").length,
+    transfers: transfers.filter((t) => t.tone !== "good").length,
+    processors: processors.filter((p) => p.tone !== "good").length,
+    contracts: contracts.filter((c) => c.tone !== "good").length,
+    policies: policies.filter((p) => p.status !== "Current").length,
+  };
+}

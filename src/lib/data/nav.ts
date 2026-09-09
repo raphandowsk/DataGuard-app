@@ -21,7 +21,7 @@ export const NAV: NavGroup[] = [
       { id: "assessment", icon: "clipboard-check", label: "Assessment", ready: true },
       { id: "control", icon: "list-checks", label: "Controls", ready: true },
       { id: "risks", icon: "triangle-alert", label: "Risks", ready: true },
-      { id: "tasks", icon: "circle-check-big", label: "Tasks", ready: true, badge: "5" },
+      { id: "tasks", icon: "circle-check-big", label: "Tasks", ready: true },
     ],
   },
   {
@@ -29,30 +29,30 @@ export const NAV: NavGroup[] = [
     items: [
       { id: "inventory", icon: "table-2", label: "Data inventory", ready: true },
       { id: "map", icon: "git-fork", label: "Data map", ready: true },
-      { id: "sensitive", icon: "shield-alert", label: "Sensitive data", ready: true, badge: "2" },
+      { id: "sensitive", icon: "shield-alert", label: "Sensitive data", ready: true },
       { id: "retention", icon: "timer", label: "Retention", ready: true },
-      { id: "transfers", icon: "globe", label: "Transfers", ready: true, badge: "2" },
+      { id: "transfers", icon: "globe", label: "Transfers", ready: true },
     ],
   },
   {
     label: "People",
     items: [
-      { id: "rights", icon: "user-round-cog", label: "Rights requests", ready: true, badge: "1" },
+      { id: "rights", icon: "user-round-cog", label: "Rights requests", ready: true },
       { id: "consent", icon: "badge-check", label: "Consent", ready: true },
     ],
   },
   {
     label: "Third parties",
     items: [
-      { id: "processors", icon: "building-2", label: "Processors", ready: true, badge: "4" },
-      { id: "contracts", icon: "file-text", label: "Contracts", ready: true, badge: "4" },
+      { id: "processors", icon: "building-2", label: "Processors", ready: true },
+      { id: "contracts", icon: "file-text", label: "Contracts", ready: true },
     ],
   },
   {
     label: null,
     items: [
       { id: "incidents", icon: "siren", label: "Incidents", ready: true },
-      { id: "policies", icon: "book-text", label: "Policies", ready: true, badge: "2" },
+      { id: "policies", icon: "book-text", label: "Policies", ready: true },
       { id: "evidence", icon: "archive", label: "Evidence vault", ready: true },
       { id: "reports", icon: "chart-no-axes-column", label: "Reports", ready: true },
       { id: "settings", icon: "settings", label: "Settings", ready: true },

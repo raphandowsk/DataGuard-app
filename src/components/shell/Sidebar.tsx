@@ -3,11 +3,13 @@
 import { Icon } from "@/components/ui/Icon";
 import { NAV } from "@/lib/data/nav";
 import { useUI } from "@/lib/store";
+import { useNavCounts } from "@/lib/supabase/operational";
 
 export function Sidebar() {
   const screen = useUI((s) => s.screen);
   const go = useUI((s) => s.go);
   const openPalette = useUI((s) => s.openPalette);
+  const counts = useNavCounts();
 
   return (
     <aside className="scroll-thin w-[248px] flex-none overflow-y-auto border-r border-line bg-surface px-3 pb-6 pt-3.5">
@@ -21,6 +23,7 @@ export function Sidebar() {
           <div className="flex flex-col gap-px">
             {group.items.map((item) => {
               const active = item.id === screen;
+              const count = counts[item.id];
               return (
                 <button
                   key={item.id}
@@ -37,9 +40,9 @@ export function Sidebar() {
                 >
                   <Icon name={item.icon} size={16} className="flex-none opacity-90" />
                   <span className="flex-1 text-left">{item.label}</span>
-                  {item.badge && (
+                  {typeof count === "number" && count > 0 && (
                     <span className="rounded-full bg-crit-bg px-1.5 py-px text-[10.5px] font-semibold text-crit-fg">
-                      {item.badge}
+                      {count}
                     </span>
                   )}
                   {!item.ready && (
