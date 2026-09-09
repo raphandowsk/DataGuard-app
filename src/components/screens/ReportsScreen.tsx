@@ -5,7 +5,8 @@ import { REPORT_FORMATS, REPORT_SECTIONS, REPORTS } from "@/lib/data/reports";
 import { shade } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 import { useControls } from "@/components/ControlsProvider";
-import { useRisks, useActiveOrg } from "@/lib/supabase/operational";
+import { useRisks, useTasks, useActiveOrg } from "@/lib/supabase/operational";
+import { severityOf } from "@/lib/data/risks";
 
 export function ReportsScreen() {
   const reportId = useUI((s) => s.reportId);
@@ -17,6 +18,7 @@ export function ReportsScreen() {
   const answers = useUI((s) => s.answers);
   const controls = useControls();
   const { risks } = useRisks();
+  const { tasks } = useTasks();
   const { org } = useActiveOrg();
 
   const report = REPORTS.find((r) => r.id === reportId) ?? REPORTS[0];
@@ -45,6 +47,65 @@ export function ReportsScreen() {
     .map(([name, e]) => ({ name, n: e.total ? Math.round((100 * e.score) / e.total) : 0 }))
     .sort((a, b) => a.n - b.n);
   const orgName = (org?.name ?? "Your organisation").toUpperCase();
+
+  // ---- Real export ----
+  const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const esc = (s: string) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const download = (name: string, mime: string, content: string) => {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  };
+
+  const csvExport = () => {
+    const rows = [["Control", "Title", "Domain", "Legal reference", "Risk", "Answer"]];
+    for (const c of controls.list) rows.push([c.id, c.title, c.category, c.ref, c.risk, answers[c.id] ?? "Not assessed"]);
+    const csv = rows.map((r) => r.map((f) => `"${String(f).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    download(`${(org?.name ?? "workspace").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-assessment.csv`, "text/csv", csv);
+  };
+
+  const printExport = () => {
+    const openTasks = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled").slice(0, 8);
+    const section = (title: string, body: string) => `<h2>${esc(title)}</h2>${body}`;
+    const parts: string[] = [];
+    if (sections.coverage) parts.push(section("Coverage summary", `<div class="stats">${reportStats.map((s) => `<div><div class="v">${esc(s.v)}</div><div class="k">${esc(s.k)}</div></div>`).join("")}</div>`));
+    if (sections.domains) parts.push(section("Coverage by domain", `<table><thead><tr><th>Domain</th><th>Coverage</th></tr></thead><tbody>${domains.map((d) => `<tr><td>${esc(d.name)}</td><td>${d.n}%</td></tr>`).join("")}</tbody></table>`));
+    if (sections.actions) parts.push(section("Priority actions", openTasks.length ? `<table><thead><tr><th>Task</th><th>Priority</th><th>Owner</th><th>Due</th></tr></thead><tbody>${openTasks.map((t) => `<tr><td>${esc(t.title)}</td><td>${esc(t.priority)}</td><td>${esc(t.owner)}</td><td>${esc(t.due)}</td></tr>`).join("")}</tbody></table>` : `<p>No open tasks.</p>`));
+    if (sections.risks) parts.push(section("Risk register", risks.length ? `<table><thead><tr><th>Risk</th><th>Domain</th><th>Severity</th><th>Owner</th></tr></thead><tbody>${risks.map((r) => `<tr><td>${esc(r.title)}</td><td>${esc(r.domain)}</td><td>${esc(severityOf(r.l * r.i))}</td><td>${esc(r.owner)}</td></tr>`).join("")}</tbody></table>` : `<p>No risks recorded.</p>`));
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(report.name)} — ${esc(org?.name ?? "")}</title>
+<style>
+  body{font-family:'Instrument Sans',system-ui,sans-serif;color:#0e1a1c;margin:40px;line-height:1.5}
+  .head{display:flex;justify-content:space-between;border-bottom:2px solid #0e1a1c;padding-bottom:14px;margin-bottom:20px}
+  .org{font-size:10px;font-weight:700;letter-spacing:1px;color:#5b6b6e}
+  h1{font-size:26px;margin:6px 0 0}
+  .meta{text-align:right;font-size:10px;color:#5b6b6e}
+  .meta b{color:#0e1a1c}
+  .intro{font-size:12px;color:#3d4e51;margin-bottom:8px}
+  h2{font-size:13px;margin:22px 0 8px;text-transform:uppercase;letter-spacing:.5px;color:#5b6b6e}
+  .stats{display:flex;gap:16px}.stats .v{font-size:26px;font-weight:600}.stats .k{font-size:10px;color:#5b6b6e}
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e3e9ea}
+  th{color:#5b6b6e;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+  .foot{margin-top:28px;padding-top:12px;border-top:1px solid #e3e9ea;font-size:10px;color:#93a1a4}
+</style></head><body>
+  <div class="head"><div><div class="org">${esc(org?.name ?? "Your organisation")}</div><h1>${esc(report.name)}</h1></div>
+  <div class="meta"><div>Framework</div><div><b>TZ-PDPA 2022</b></div><div>Matrix v1.0.0</div><div>${esc(today)}</div></div></div>
+  <p class="intro">This report describes assessed control coverage against the DataGuard mapping of the Tanzania Personal Data Protection Act, 2022. It is a compliance management record and does not constitute legal advice or a statement of legal compliance.</p>
+  ${parts.join("")}
+  <div class="foot">Generated by DataGuard on ${esc(today)} · framework TZ-PDPA 2022, matrix v1.0.0. Coverage weights fully-implemented controls fully and partial ones by half.</div>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 400); }
+    else download(`${(org?.name ?? "workspace").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-report.html`, "text/html", html);
+  };
+
+  const generate = () => {
+    if (format === "CSV" || format === "XLSX") { csvExport(); useUI.getState().flash(`${report.name} exported as CSV.`); }
+    else { printExport(); useUI.getState().flash(`${report.name} opened for printing (save as PDF).`); }
+  };
 
   return (
     <div className="grid animate-fade grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_330px]">
@@ -182,7 +243,7 @@ export function ReportsScreen() {
             </div>
           </div>
           <button
-            onClick={() => useUI.getState().flash(`${report.name} generated as ${format}. Footer names framework TZ-PDPA 2022, matrix v1.0.0.`)}
+            onClick={generate}
             className="flex w-full items-center justify-center gap-[7px] rounded-full bg-teal p-[11px] text-[12.5px] font-semibold text-white hover:bg-teal-dark"
           >
             <Icon name="download" size={15} className="flex-none" />

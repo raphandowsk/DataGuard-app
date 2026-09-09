@@ -3,20 +3,41 @@
 import { Icon } from "@/components/ui/Icon";
 import { StatTiles } from "@/components/ui/StatTiles";
 import { SourcePill } from "@/components/ui/SourcePill";
-import { AUDIT_FILTERS, AUDIT_NOTE, AUDIT_STATS } from "@/lib/data/records";
+import { AUDIT_FILTERS, AUDIT_NOTE } from "@/lib/data/records";
 import { useAudit } from "@/lib/supabase/operational";
 import { useUI } from "@/lib/store";
 
 const TH = "border-b border-line px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-ink-faint";
+
+// Map a filter chip to the actions/objects it should match.
+const FILTER_RE: Record<string, RegExp | null> = {
+  "All activity": null,
+  "Control answers": /control answer|PDPA-\d/i,
+  Evidence: /evidence/i,
+  Permissions: /permission|role|member|invite/i,
+  "Rights requests": /rights|DSR|request/i,
+  Incidents: /incident|breach|notif/i,
+};
 
 export function AuditScreen() {
   const auditFilter = useUI((s) => s.auditFilter);
   const setAuditFilter = useUI((s) => s.setAuditFilter);
   const { audit, live } = useAudit();
 
+  const re = FILTER_RE[auditFilter] ?? null;
+  const rows = re ? audit.filter((a) => re.test(`${a.action} ${a.object}`)) : audit;
+
+  const people = new Set(audit.map((a) => a.who).filter(Boolean)).size;
+  const stats = [
+    { v: String(audit.length), k: "Entries recorded", sub: audit.length ? "In this workspace" : "No activity yet" },
+    { v: String(people), k: "People with activity", sub: people ? "Attributed to accounts" : "—" },
+    { v: "Immutable", k: "Entries cannot be edited", sub: "Append only, no delete path" },
+    { v: "Attributed", k: "Every entry", sub: "Who changed what, and when" },
+  ];
+
   return (
     <div className="flex animate-fade flex-col gap-4">
-      <StatTiles stats={AUDIT_STATS} />
+      <StatTiles stats={stats} />
 
       <div className="flex items-start gap-[11px] rounded-xl border border-line bg-surface px-4 py-3">
         <Icon name="info" size={16} className="mt-px flex-none text-ink-muted" />
@@ -53,7 +74,16 @@ export function AuditScreen() {
               </tr>
             </thead>
             <tbody>
-              {audit.map((a, i) => (
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-[12.5px] text-ink-muted">
+                    {audit.length === 0
+                      ? "No activity recorded yet. Changes to controls, risks, tasks, records and permissions will appear here as your team works."
+                      : `No entries match “${auditFilter}”.`}
+                  </td>
+                </tr>
+              )}
+              {rows.map((a, i) => (
                 <tr key={i} className="border-b border-ground align-top">
                   <td className="tnum whitespace-nowrap px-5 py-[11px] text-ink-muted">{a.t}</td>
                   <td className="px-3 py-[11px]">
@@ -63,7 +93,7 @@ export function AuditScreen() {
                   <td className="px-3 py-[11px] text-ink-mid">{a.action}</td>
                   <td className="px-3 py-[11px] font-mono text-[11px] text-ink-mid">{a.object}</td>
                   <td className="max-w-[230px] px-3 py-[11px]">
-                    {a.from !== "—" && (
+                    {a.from && a.from !== "—" && (
                       <div className="flex flex-wrap items-center gap-[7px]">
                         <span className="rounded bg-crit-bg px-1.5 py-px text-[11px] text-crit-fg [text-wrap:pretty]">{a.from}</span>
                         <Icon name="arrow-right" size={11} className="flex-none text-ink-faint" />
