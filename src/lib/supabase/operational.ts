@@ -75,7 +75,7 @@ export function useActiveOrg(): { org: ActiveOrg | null; source: Source } {
 
 /** Live tasks for the active org, with an optimistic + persisted status setter. */
 export function useTasks() {
-  const { client } = useAuth();
+  const { client, email } = useAuth();
   const { org, source: orgSource } = useActiveOrg();
   const dataRev = useUI((s) => s.dataRev);
   const [tasks, setTasks] = useState<Task[]>(TASK_FIXTURES);
@@ -121,12 +121,14 @@ export function useTasks() {
 
   const setStatus = useCallback(
     (code: string, status: Task["status"]) => {
+      const prevStatus = tasks.find((t) => t.id === code)?.status;
       setTasks((prev) => prev.map((t) => (t.id === code ? { ...t, status } : t)));
       if (client && org) {
         client.from("tasks").update({ status } as never).eq("org_id", org.id).eq("code", code).then(() => {});
+        logAudit(client, org.id, email ?? "", { action: "Changed task status", object: code, from: prevStatus, to: status });
       }
     },
-    [client, org],
+    [client, org, email, tasks],
   );
 
   /**
@@ -164,6 +166,7 @@ export function useTasks() {
       const { error } = await client.from("tasks").insert(row as never);
       if (error) return { ok: false, error: error.message };
 
+      logAudit(client, org.id, email ?? "", { action: "Created remediation task", object: code });
       // Let every other live tasks hook (e.g. the sidebar badge) refetch.
       useUI.getState().bumpData();
       setTasks((prev) => [
@@ -172,7 +175,7 @@ export function useTasks() {
       ]);
       return { ok: true, created: true };
     },
-    [client, org, tasks],
+    [client, org, tasks, email],
   );
 
   /** Delete a task by code (used to undo a remediation task). */
@@ -181,11 +184,12 @@ export function useTasks() {
       if (!client || !org) return { ok: false, error: "No active workspace." };
       const { error } = await client.from("tasks").delete().eq("org_id", org.id).eq("code", code);
       if (error) return { ok: false, error: error.message };
+      logAudit(client, org.id, email ?? "", { action: "Removed task", object: code });
       useUI.getState().bumpData();
       setTasks((prev) => prev.filter((t) => t.id !== code));
       return { ok: true };
     },
-    [client, org],
+    [client, org, email],
   );
 
   return { tasks, source, setStatus, createFromControl, removeTask, live: source === "live" };
@@ -249,6 +253,7 @@ function useRegister<T>(
   columns: string,
   map: (row: Record<string, unknown>) => T,
   fixture: T[],
+  orderBy: { col: string; ascending: boolean } = { col: "display_order", ascending: true },
 ) {
   const { client } = useAuth();
   const { org, source: orgSource } = useActiveOrg();
@@ -268,7 +273,7 @@ function useRegister<T>(
       .from(table)
       .select(columns)
       .eq("org_id", org.id)
-      .order("display_order", { ascending: true })
+      .order(orderBy.col, { ascending: orderBy.ascending })
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error || !data) { setRows(fixture); setSource("fixtures"); return; }
@@ -287,18 +292,22 @@ function useRegister<T>(
 /** Insert / delete for an org-scoped register table. Every write bumps dataRev
  *  so the read hooks (and sidebar badges) refetch and stay in sync. */
 export function useRegisterActions(table: RegisterTable) {
-  const { client } = useAuth();
+  const { client, email } = useAuth();
   const { org } = useActiveOrg();
+  const label = TABLE_LABEL[table] ?? "record";
+  const keyOf = (o: Record<string, unknown>) =>
+    String(o.code ?? o.name ?? o.cat ?? o.record ?? o.processor ?? o.purpose ?? o.title ?? "");
 
   const insert = useCallback(
     async (values: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> => {
       if (!client || !org) return { ok: false, error: "No active workspace." };
       const { error } = await client.from(table).insert({ org_id: org.id, ...values } as never);
       if (error) return { ok: false, error: error.message };
+      logAudit(client, org.id, email ?? "", { action: `Added ${label}`, object: keyOf(values) });
       useUI.getState().bumpData();
       return { ok: true };
     },
-    [client, org, table],
+    [client, org, table, label, email],
   );
 
   const remove = useCallback(
@@ -308,10 +317,11 @@ export function useRegisterActions(table: RegisterTable) {
       for (const [k, v] of Object.entries(match)) q = q.eq(k, v as never);
       const { error } = await q;
       if (error) return { ok: false, error: error.message };
+      logAudit(client, org.id, email ?? "", { action: `Removed ${label}`, object: keyOf(match) });
       useUI.getState().bumpData();
       return { ok: true };
     },
-    [client, org, table],
+    [client, org, table, label, email],
   );
 
   const update = useCallback(
@@ -321,10 +331,11 @@ export function useRegisterActions(table: RegisterTable) {
       for (const [k, v] of Object.entries(match)) q = q.eq(k, v as never);
       const { error } = await q;
       if (error) return { ok: false, error: error.message };
+      logAudit(client, org.id, email ?? "", { action: `Updated ${label}`, object: keyOf(match) });
       useUI.getState().bumpData();
       return { ok: true };
     },
-    [client, org, table],
+    [client, org, table, label, email],
   );
 
   return { insert, remove, update };
@@ -430,14 +441,44 @@ export function useEvidence() {
 export function useAudit() {
   const { rows, live } = useRegister<AuditRow>(
     "audit_log",
-    "t,who,role,action,object,from_val,to_val,ip",
+    "t,who,role,action,object,from_val,to_val,ip,created_at",
     (r) => ({
       t: String(r.t ?? ""), who: String(r.who ?? ""), role: String(r.role ?? ""), action: String(r.action ?? ""),
       object: String(r.object ?? ""), from: String(r.from_val ?? ""), to: String(r.to_val ?? ""), ip: String(r.ip ?? ""),
     }),
     AUDIT_FIXTURES,
+    { col: "created_at", ascending: false },
   );
   return { audit: rows, live };
+}
+
+// --- Audit logging -------------------------------------------------------
+const TABLE_LABEL: Record<string, string> = {
+  activities: "processing activity", sensitive_data: "sensitive category", retention_schedule: "retention record",
+  transfers: "transfer", rights_requests: "rights request", consent_records: "consent record",
+  processors: "processor", contracts: "contract", policies: "policy", evidence: "evidence document", incidents: "incident",
+};
+
+type AuditClient = { from: (t: string) => { insert: (v: unknown) => Promise<{ error: unknown }> } };
+
+/** Append one entry to the org's audit trail. Best-effort: never blocks or
+ *  throws into the caller. */
+export async function logAudit(
+  client: unknown,
+  orgId: string,
+  who: string,
+  entry: { action: string; object?: string; from?: string; to?: string; role?: string },
+): Promise<void> {
+  try {
+    const now = new Date();
+    const t = `${now.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}, ${now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+    await (client as AuditClient).from("audit_log").insert({
+      org_id: orgId, t, who: who || "—", role: entry.role || "Member", action: entry.action,
+      object: entry.object ?? null, from_val: entry.from ?? null, to_val: entry.to ?? null, ip: "—",
+    });
+  } catch {
+    /* audit logging must never break the primary action */
+  }
 }
 
 export function useRights() {
@@ -581,7 +622,7 @@ type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{
 
 /** Team, invitations and workspace administration for the Settings module. */
 export function useOrgAdmin() {
-  const { client } = useAuth();
+  const { client, email } = useAuth();
   const { org } = useActiveOrg();
   const dataRev = useUI((s) => s.dataRev);
   const [members, setMembers] = useState<OrgMember[]>([]);
@@ -605,36 +646,41 @@ export function useOrgAdmin() {
     if (!client || !org) return { ok: false, error: "No active workspace." };
     const { error } = await client.from("organisations").update({ name, sector: sector || null } as never).eq("id", org.id);
     if (error) return { ok: false, error: error.message };
+    logAudit(client, org.id, email ?? "", { action: "Updated organisation profile", object: name, role: "DPO" });
     resetOrgCache(); useUI.getState().bumpData(); return { ok: true };
-  }, [client, org]);
+  }, [client, org, email]);
 
   const setRole = useCallback(async (userId: string, role: string) => {
     if (!client || !org) return { ok: false, error: "No active workspace." };
     const { error } = await client.from("organisation_members").update({ role } as never).eq("org_id", org.id).eq("user_id", userId);
     if (error) return { ok: false, error: error.message };
+    logAudit(client, org.id, email ?? "", { action: "Changed member role", object: userId, to: role, role: "DPO" });
     useUI.getState().bumpData(); return { ok: true };
-  }, [client, org]);
+  }, [client, org, email]);
 
   const removeMember = useCallback(async (userId: string) => {
     if (!client || !org) return { ok: false, error: "No active workspace." };
     const { error } = await client.from("organisation_members").delete().eq("org_id", org.id).eq("user_id", userId);
     if (error) return { ok: false, error: error.message };
+    logAudit(client, org.id, email ?? "", { action: "Removed member", object: userId, role: "DPO" });
     useUI.getState().bumpData(); return { ok: true };
-  }, [client, org]);
+  }, [client, org, email]);
 
-  const invite = useCallback(async (email: string, role: string) => {
+  const invite = useCallback(async (inviteEmail: string, role: string) => {
     if (!client || !org) return { ok: false, error: "No active workspace." };
-    const { error } = await client.from("org_invitations").insert({ org_id: org.id, email, role, status: "pending" } as never);
+    const { error } = await client.from("org_invitations").insert({ org_id: org.id, email: inviteEmail, role, status: "pending" } as never);
     if (error) return { ok: false, error: error.message };
+    logAudit(client, org.id, email ?? "", { action: "Invited member", object: inviteEmail, to: role, role: "DPO" });
     useUI.getState().bumpData(); return { ok: true };
-  }, [client, org]);
+  }, [client, org, email]);
 
   const cancelInvite = useCallback(async (id: string) => {
     if (!client || !org) return { ok: false, error: "No active workspace." };
     const { error } = await client.from("org_invitations").delete().eq("org_id", org.id).eq("id", id);
     if (error) return { ok: false, error: error.message };
+    logAudit(client, org.id, email ?? "", { action: "Cancelled invitation", object: id, role: "DPO" });
     useUI.getState().bumpData(); return { ok: true };
-  }, [client, org]);
+  }, [client, org, email]);
 
   const deleteWorkspace = useCallback(async () => {
     if (!client || !org) return { ok: false, error: "No active workspace." };

@@ -6,7 +6,7 @@ import { ANSWERS } from "@/lib/data/controls";
 import { useControls } from "@/components/ControlsProvider";
 import { RemediationCard } from "@/components/screens/RemediationCard";
 import { useAuth } from "@/lib/supabase/auth";
-import { useTasks } from "@/lib/supabase/operational";
+import { useTasks, useActiveOrg, logAudit } from "@/lib/supabase/operational";
 import { saveAnswer } from "@/lib/supabase/answers";
 import { RISK_TONE, shade } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -14,6 +14,7 @@ import { useUI } from "@/lib/store";
 export function AssessmentScreen() {
   const { list, total } = useControls();
   const { client, userId, email } = useAuth();
+  const { org } = useActiveOrg();
   const { tasks, createFromControl, removeTask } = useTasks();
   const controlId = useUI((s) => s.controlId);
   const assessCat = useUI((s) => s.assessCat);
@@ -164,8 +165,10 @@ export function AssessmentScreen() {
                   role="radio"
                   aria-checked={on}
                   onClick={() => {
+                    if (answer === label) return;
                     useUI.getState().setAnswer(q.id, label);
                     persist(q.id);
+                    if (client && org) logAudit(client, org.id, email ?? "", { action: "Changed control answer", object: q.id, from: answer, to: label });
                   }}
                   className={`flex items-center gap-3 rounded-xl px-4 py-[13px] text-left ${on ? "border-[1.5px] border-teal bg-teal-bg" : "border-[1.5px] border-line bg-surface hover:border-line-strong hover:bg-[#fbfcfc]"}`}
                 >
