@@ -239,17 +239,20 @@ export function useRisks() {
 }
 
 /** Generic read hook for an org-scoped register table with a fixture fallback. */
+export type RegisterTable =
+  | "activities" | "processors" | "contracts" | "retention_schedule" | "sensitive_data"
+  | "policies" | "evidence" | "audit_log" | "rights_requests" | "consent_records"
+  | "incidents" | "incident_timeline" | "transfers";
+
 function useRegister<T>(
-  table:
-    | "activities" | "processors" | "contracts" | "retention_schedule" | "sensitive_data"
-    | "policies" | "evidence" | "audit_log" | "rights_requests" | "consent_records"
-    | "incidents" | "incident_timeline" | "transfers",
+  table: RegisterTable,
   columns: string,
   map: (row: Record<string, unknown>) => T,
   fixture: T[],
 ) {
   const { client } = useAuth();
   const { org, source: orgSource } = useActiveOrg();
+  const dataRev = useUI((s) => s.dataRev);
   const [rows, setRows] = useState<T[]>(fixture);
   const [source, setSource] = useState<Source>("loading");
 
@@ -276,9 +279,42 @@ function useRegister<T>(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, org, orgSource]);
+  }, [client, org, orgSource, dataRev]);
 
   return { rows, source, live: source === "live" };
+}
+
+/** Insert / delete for an org-scoped register table. Every write bumps dataRev
+ *  so the read hooks (and sidebar badges) refetch and stay in sync. */
+export function useRegisterActions(table: RegisterTable) {
+  const { client } = useAuth();
+  const { org } = useActiveOrg();
+
+  const insert = useCallback(
+    async (values: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> => {
+      if (!client || !org) return { ok: false, error: "No active workspace." };
+      const { error } = await client.from(table).insert({ org_id: org.id, ...values } as never);
+      if (error) return { ok: false, error: error.message };
+      useUI.getState().bumpData();
+      return { ok: true };
+    },
+    [client, org, table],
+  );
+
+  const remove = useCallback(
+    async (match: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> => {
+      if (!client || !org) return { ok: false, error: "No active workspace." };
+      let q = client.from(table).delete().eq("org_id", org.id);
+      for (const [k, v] of Object.entries(match)) q = q.eq(k, v as never);
+      const { error } = await q;
+      if (error) return { ok: false, error: error.message };
+      useUI.getState().bumpData();
+      return { ok: true };
+    },
+    [client, org, table],
+  );
+
+  return { insert, remove };
 }
 
 export function useActivities() {
