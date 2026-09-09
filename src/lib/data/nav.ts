@@ -90,10 +90,10 @@ export const PAGES: Record<string, PageMeta> = {
   policies: { crumb1: "Records", crumb2: "Policies", title: "Policy library", sub: "Policies and procedures with version, owner, approval and the controls each one supports. An expired policy is weak evidence." },
   evidence: { crumb1: "Records", crumb2: "Evidence vault", title: "Evidence vault", sub: "Documents that prove your controls operate. A control without evidence is an assertion rather than a record." },
   settings: { crumb1: "Admin", crumb2: "Settings", title: "Settings", sub: "Organisation profile, the people who do this work, and what each of them can reach." },
-  rightsCase: { crumb1: "Rights requests", crumb2: "DSR-2026-041", title: "Access request from Halima Juma", sub: "Verify who is asking, find every record, decide what can be released, and keep the reasoning." },
+  rightsCase: { crumb1: "People · Rights requests", crumb2: "Case", title: "Rights request", sub: "Verify who is asking, find every record, decide what can be released, and keep the reasoning." },
   incidentIntake: { crumb1: "Incidents", crumb2: "Report a breach", title: "Report a breach", sub: "Four steps from what happened to a notification record. The clock starts when you became aware, not when you finish this form." },
-  transferAssess: { crumb1: "Data · Transfers", crumb2: "TR-01", title: "Transfer assessment — Ireland", sub: "Six questions that produce a recorded decision for one route. Honest answers make the record defensible." },
+  transferAssess: { crumb1: "Data · Transfers", crumb2: "Assessment", title: "Transfer assessment", sub: "Six questions that produce a recorded decision for one route. Honest answers make the record defensible." },
   audit: { crumb1: "Records", crumb2: "Audit trail", title: "Audit trail", sub: "Every change to a control, risk, task, record or permission, attributed and time-stamped. Entries cannot be edited or deleted." },
-  consentHistory: { crumb1: "People · Consent", crumb2: "Wording history", title: "Enrol in water and sanitation programmes", sub: "What each version of the wording said, and how many people are sitting on each one." },
+  consentHistory: { crumb1: "People · Consent", crumb2: "Wording", title: "Consent wording", sub: "The current wording for this purpose, and how many people hold it." },
   frameworkMigration: { crumb1: "Admin · Settings", crumb2: "Framework update", title: "Matrix v1.1.0 is available", sub: "Seven controls changed. Your answers are preserved except where the requirement itself moved." },
 };

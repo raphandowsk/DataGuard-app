@@ -26,7 +26,6 @@ const FIELDS: Field[] = [
 ];
 
 export function TransfersScreen() {
-  const go = useUI((s) => s.go);
   const flash = useUI((s) => s.flash);
   const { transfers, live } = useTransfers();
   const { insert, remove } = useRegisterActions("transfers");
@@ -93,7 +92,7 @@ export function TransfersScreen() {
               </div>
               {t.note && <p className="m-0 mt-3.5 rounded-[11px] border border-line bg-[#fbfcfc] px-3.5 py-3 text-[12px] leading-[1.55] text-ink-mid [text-wrap:pretty]">{t.note}</p>}
               <button
-                onClick={() => go("transferAssess")}
+                onClick={() => useUI.getState().openDetail("transferAssess", t.id, `Transfer to ${t.dest}`)}
                 className="mt-3.5 flex w-full items-center justify-center gap-[7px] rounded-full border border-line-strong bg-surface px-3.5 py-[9px] text-[12.5px] font-semibold hover:border-teal hover:text-teal"
               >
                 <Icon name="clipboard-list" size={14} className="flex-none" />

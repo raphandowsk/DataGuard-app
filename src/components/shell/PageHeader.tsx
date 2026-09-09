@@ -9,6 +9,7 @@ import { useUI } from "@/lib/store";
 export function PageHeader() {
   const screen = useUI((s) => s.screen);
   const controlId = useUI((s) => s.controlId);
+  const detailLabel = useUI((s) => s.detailLabel);
   const { byId } = useControls();
   const { org } = useActiveOrg();
   const go = useUI((s) => s.go);
@@ -26,6 +27,10 @@ export function PageHeader() {
   if (screen === "control") {
     const q = byId[controlId];
     if (q) page = { ...page, crumb2: q.id, title: q.title };
+  }
+  // Detail screens name the specific record that was opened.
+  if ((screen === "transferAssess" || screen === "rightsCase" || screen === "consentHistory") && detailLabel) {
+    page = { ...page, title: detailLabel };
   }
 
   return (

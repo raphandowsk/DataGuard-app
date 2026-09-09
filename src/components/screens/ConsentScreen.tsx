@@ -23,7 +23,6 @@ const FIELDS: Field[] = [
 ];
 
 export function ConsentScreen() {
-  const go = useUI((s) => s.go);
   const flash = useUI((s) => s.flash);
   const { consent, live } = useConsent();
   const { insert, remove } = useRegisterActions("consent_records");
@@ -91,7 +90,7 @@ export function ConsentScreen() {
                 <Row k="Last updated" v={c.updated} />
               </div>
               <button
-                onClick={() => go("consentHistory")}
+                onClick={() => useUI.getState().openDetail("consentHistory", c.purpose, c.purpose)}
                 className="mt-4 flex w-full items-center justify-center gap-[7px] rounded-full border border-line-strong bg-surface px-3.5 py-[9px] text-[12.5px] font-semibold hover:border-teal hover:text-teal"
               >
                 <Icon name="file-text" size={14} className="flex-none" />

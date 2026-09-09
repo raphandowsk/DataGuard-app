@@ -52,6 +52,10 @@ interface UIState {
   portal: boolean;
   portalStep: number; // public rights portal: 0 form, 1 confirmation
 
+  // detail-screen selection (transfer assessment, rights case, consent history)
+  detailKey: string | null;
+  detailLabel: string | null;
+
   // assessment / control state
   assessCat: string | null; // the domain (control category) being assessed
   answers: Record<string, string>;
@@ -78,6 +82,7 @@ interface UIState {
   assess: (id: string) => void;
   goDomain: (cat: string) => void;
   setAssessCat: (cat: string | null) => void;
+  openDetail: (screen: Screen, key: string, label?: string) => void;
   bumpData: () => void;
   setAnswer: (id: string, label: string) => void;
   setNote: (id: string, v: string) => void;
@@ -117,6 +122,8 @@ export const useUI = create<UIState>((set, get) => ({
   portal: false,
   portalStep: 0,
 
+  detailKey: null,
+  detailLabel: null,
   assessCat: null,
   dataRev: 0,
   // Empty by default; a signed-in user's saved answers are hydrated from the
@@ -141,6 +148,7 @@ export const useUI = create<UIState>((set, get) => ({
   assess: (id) => set({ screen: "assessment", controlId: id, palette: false }),
   goDomain: (cat) => set({ screen: "assessment", assessCat: cat, palette: false }),
   setAssessCat: (cat) => set({ assessCat: cat }),
+  openDetail: (screen, key, label) => set({ screen, detailKey: key, detailLabel: label ?? null, palette: false }),
   bumpData: () => set((s) => ({ dataRev: s.dataRev + 1 })),
   setAnswer: (id, label) => set((s) => ({ answers: { ...s.answers, [id]: label } })),
   setNote: (id, v) => set((s) => ({ notesById: { ...s.notesById, [id]: v } })),

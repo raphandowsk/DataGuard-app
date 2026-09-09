@@ -102,6 +102,13 @@ export function RightsScreen() {
                 <div className="mt-0.5 text-[11px] text-ink-faint">Received {r.received}</div>
               </div>
               <span className="inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-[3px] text-[11px] font-semibold" style={{ color: stageColor, background: stageBg }}>{r.stage}</span>
+              <button
+                onClick={() => useUI.getState().openDetail("rightsCase", r.id, `${r.type} — ${r.subject}`)}
+                aria-label="Open request"
+                className="grid h-8 w-8 flex-none place-items-center rounded-[9px] border border-line bg-surface text-ink-muted hover:border-teal hover:text-teal"
+              >
+                <Icon name="arrow-up-right" size={15} />
+              </button>
               <RowRemove onConfirm={async () => { const res = await remove({ code: r.id }); flash(res.ok ? `Removed ${r.id}.` : res.error ?? "Could not remove."); }} />
             </div>
           );

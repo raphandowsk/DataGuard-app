@@ -1,69 +1,89 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
-import { CONSENT_HISTORY_NOTE, CONSENT_VERSIONS, DIFF } from "@/lib/data/consent";
+import { Pill } from "@/components/ui/Pill";
+import { useConsent } from "@/lib/supabase/operational";
+import { STATUS_TO_TONE, TONE3 } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
 
-const DIFF_STYLE: Record<string, React.CSSProperties> = {
-  add: { background: "#e3f2ea", color: "#12503c", borderLeft: "3px solid #16775a" },
-  del: { background: "#fbe7e4", color: "#7a2a22", borderLeft: "3px solid #b23a2f", textDecoration: "line-through" },
-  same: { background: "#fbfcfc", color: "#3d4e51", borderLeft: "3px solid #e3e9ea" },
-};
-const DIFF_MARK: Record<string, string> = { add: "Added in v3.1", del: "Removed in v3.1", same: "Unchanged" };
-
 export function ConsentHistoryScreen() {
+  const go = useUI((s) => s.go);
+  const detailKey = useUI((s) => s.detailKey);
+  const { consent } = useConsent();
+  const c = consent.find((x) => x.purpose === detailKey) ?? consent[0];
+
+  if (!c) {
+    return (
+      <div className="animate-fade rounded-card border border-line bg-surface px-6 py-10 text-center">
+        <p className="m-0 text-[13px] text-ink-muted">No consent record selected. Open one from the consent register.</p>
+        <button onClick={() => go("consent")} className="mt-4 rounded-full border border-line-strong bg-surface px-4 py-2 text-[12.5px] font-semibold hover:border-teal hover:text-teal">Back to consent</button>
+      </div>
+    );
+  }
+
+  const tone = TONE3[STATUS_TO_TONE[c.status]];
+  const facts: Array<[string, string]> = [
+    ["Current wording", c.version || "—"],
+    ["How it is captured", c.method || "—"],
+    ["Last updated", c.updated || "—"],
+  ];
+
   return (
     <div className="grid animate-fade grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <section className="overflow-hidden rounded-card border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-3 border-b border-line px-6 py-[18px]">
           <div className="flex-1">
-            <h2 className="m-0 text-[13px] font-semibold">What changed between v3.0 and v3.1</h2>
-            <p className="m-0 mt-[3px] text-[11.5px] text-ink-muted">Swahili original shown in English translation for review</p>
+            <h2 className="m-0 text-[14px] font-semibold leading-[1.35] [text-wrap:pretty]">{c.purpose}</h2>
+            <p className="m-0 mt-[3px] text-[11.5px] text-ink-muted">Consent wording and population for this purpose</p>
           </div>
-          <div className="flex flex-wrap gap-3.5">
-            <span className="flex items-center gap-1.5 text-[11px] text-ink-muted"><span className="h-[9px] w-[9px] rounded-[3px] bg-good-fg" />Added</span>
-            <span className="flex items-center gap-1.5 text-[11px] text-ink-muted"><span className="h-[9px] w-[9px] rounded-[3px] bg-alert" />Removed</span>
+          <Pill color={tone.color} bg={tone.bg} icon={tone.icon}>{c.status}</Pill>
+        </div>
+
+        <div className="flex gap-6 border-b border-line px-6 py-5">
+          <div>
+            <div className="tnum text-[26px] font-semibold leading-none">{c.held || "0"}</div>
+            <div className="mt-1 text-[11px] text-ink-muted">Consents held</div>
+          </div>
+          <div>
+            <div className="tnum text-[26px] font-semibold leading-none text-high-fg">{c.withdrawn || "0"}</div>
+            <div className="mt-1 text-[11px] text-ink-muted">Withdrawn</div>
           </div>
         </div>
-        <div className="flex flex-col gap-[7px] px-6 py-[22px]">
-          {DIFF.map((d, i) => (
-            <div key={i}>
-              <div className="rounded-lg px-3 py-[7px] text-[13px] leading-[1.65] [text-wrap:pretty]" style={DIFF_STYLE[d.kind]}>{d.text}</div>
-              <div className="mt-[3px] pl-3 text-[10px] text-ink-faint">{DIFF_MARK[d.kind]}</div>
+
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4 px-6 py-5">
+          {facts.map(([k, v]) => (
+            <div key={k}>
+              <div className="mb-[3px] text-[10.5px] text-ink-faint">{k}</div>
+              <div className="text-[12.5px] font-medium [text-wrap:pretty]">{v}</div>
             </div>
           ))}
+        </div>
+
+        <div className="border-t border-line px-6 py-5">
+          <div className="flex items-start gap-[11px] rounded-xl border border-line bg-[#fbfcfc] px-4 py-3">
+            <Icon name="history" size={16} className="mt-px flex-none text-ink-muted" />
+            <p className="m-0 text-[12px] leading-[1.6] text-ink-mid [text-wrap:pretty]">
+              Each time the wording changes, record it as a new version so you can show what a person agreed to on the
+              date they agreed. People still sitting on wording earlier than the current version may need re-consent.
+            </p>
+          </div>
         </div>
       </section>
 
       <aside className="flex flex-col gap-3.5 xl:sticky xl:top-[76px]">
         <div className="rounded-card border border-line bg-surface p-5">
-          <h3 className="m-0 mb-3 text-[12.5px] font-semibold">Versions</h3>
-          <div className="flex flex-col gap-[9px]">
-            {CONSENT_VERSIONS.map((v) => (
-              <div key={v.v} className={`rounded-xl px-4 py-3.5 ${v.current ? "border-[1.5px] border-teal bg-teal-bg" : "border border-line bg-surface"}`}>
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="text-[13px] font-semibold">{v.v}</span>
-                  {v.current && <span className="rounded bg-surface px-[5px] py-0.5 text-[9.5px] font-bold tracking-[0.3px] text-teal-dark">CURRENT</span>}
-                  <span className="tnum ml-auto text-[11px] text-ink-muted">{v.pop}</span>
-                </div>
-                <div className="mb-1.5 text-[10.5px] text-ink-faint">{v.date} · {v.langs}</div>
-                <div className="text-[11.5px] leading-[1.55] text-ink-mid [text-wrap:pretty]">{v.change}</div>
-              </div>
-            ))}
-          </div>
+          <h3 className="m-0 mb-2.5 text-[12.5px] font-semibold">Why wording matters</h3>
+          <p className="m-0 border-l-2 border-line-strong pl-3 text-[11.5px] italic leading-[1.55] text-ink-muted [text-wrap:pretty]">
+            Consent must be specific and informed. The wording a person saw is the record of what they agreed to, so it
+            is kept per version rather than overwritten.
+          </p>
         </div>
-        <div className="rounded-card border border-[#eed9c4] bg-high-bg p-5">
-          <div className="mb-2 flex items-center gap-[7px]">
-            <Icon name="triangle-alert" size={14} className="flex-none" style={{ color: "#8a4d1f" }} />
-            <h3 className="m-0 text-[12.5px] font-semibold" style={{ color: "#5f3512" }}>Coverage gap</h3>
-          </div>
-          <p className="m-0 mb-3 text-[12px] leading-[1.6] [text-wrap:pretty]" style={{ color: "#5f3512" }}>{CONSENT_HISTORY_NOTE}</p>
-          <button
-            onClick={() => useUI.getState().flash("Re-consent campaign drafted for 2,360 beneficiaries on wording earlier than v3.1.")}
-            className="flex w-full items-center justify-center gap-[7px] rounded-full border border-[#dcc3a6] bg-surface px-3 py-2 text-[12px] font-semibold hover:border-[#c67139]"
-            style={{ color: "#5f3512" }}
-          >
-            <Icon name="refresh-cw" size={14} className="flex-none" />
+        <div className="rounded-card border border-line bg-surface p-5">
+          <h3 className="m-0 mb-2.5 text-[12.5px] font-semibold">Actions</h3>
+          <button onClick={() => go("consent")} className="mb-2 w-full rounded-full border border-line-strong bg-surface px-3 py-2 text-[12px] font-semibold hover:border-teal hover:text-teal">
+            Back to consent register
+          </button>
+          <button onClick={() => useUI.getState().flash(`Re-consent campaign drafted for “${c.purpose}”.`)} className="w-full rounded-full border border-line-strong bg-surface px-3 py-2 text-[12px] font-semibold hover:border-teal hover:text-teal">
             Plan a re-consent campaign
           </button>
         </div>
