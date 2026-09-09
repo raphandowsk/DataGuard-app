@@ -9,6 +9,7 @@ import { create } from "zustand";
 export type Screen =
   | "dashboard"
   | "assessment"
+  | "controls"
   | "control"
   | "risks"
   | "tasks"

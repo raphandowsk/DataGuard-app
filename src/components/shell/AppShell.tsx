@@ -10,6 +10,7 @@ import { EvidenceDialog } from "@/components/shell/EvidenceDialog";
 import { Toast } from "@/components/shell/Toast";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { AssessmentScreen } from "@/components/screens/AssessmentScreen";
+import { ControlsScreen } from "@/components/screens/ControlsScreen";
 import { ControlScreen } from "@/components/screens/ControlScreen";
 import { RisksScreen } from "@/components/screens/RisksScreen";
 import { TasksScreen } from "@/components/screens/TasksScreen";
@@ -49,6 +50,7 @@ import { useUI, type Screen } from "@/lib/store";
 const SCREENS: Partial<Record<Screen, React.ComponentType>> = {
   dashboard: DashboardScreen,
   assessment: AssessmentScreen,
+  controls: ControlsScreen,
   control: ControlScreen,
   risks: RisksScreen,
   tasks: TasksScreen,
