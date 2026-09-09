@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "./auth";
+import { useUI } from "@/lib/store";
 import { TASKS as TASK_FIXTURES, type Task } from "@/lib/data/tasks";
 import { RISKS as RISK_FIXTURES, type Risk } from "@/lib/data/risks";
 import { CLIENTS as CLIENT_FIXTURES, type Client } from "@/lib/data/portfolio";
@@ -76,6 +77,7 @@ export function useActiveOrg(): { org: ActiveOrg | null; source: Source } {
 export function useTasks() {
   const { client } = useAuth();
   const { org, source: orgSource } = useActiveOrg();
+  const dataRev = useUI((s) => s.dataRev);
   const [tasks, setTasks] = useState<Task[]>(TASK_FIXTURES);
   const [source, setSource] = useState<Source>("loading");
 
@@ -115,7 +117,7 @@ export function useTasks() {
     return () => {
       cancelled = true;
     };
-  }, [client, org, orgSource]);
+  }, [client, org, orgSource, dataRev]);
 
   const setStatus = useCallback(
     (code: string, status: Task["status"]) => {
@@ -127,7 +129,57 @@ export function useTasks() {
     [client, org],
   );
 
-  return { tasks, source, setStatus, live: source === "live" };
+  /**
+   * Create a remediation task from a control. One open task per control: if the
+   * control already has a task it is returned rather than duplicated. Persists
+   * to the tasks table and updates local state optimistically.
+   */
+  const createFromControl = useCallback(
+    async (c: { id: string; title: string; task: string; risk: string; remediation: string }): Promise<
+      { ok: true; created: boolean } | { ok: false; error: string }
+    > => {
+      if (!client || !org) return { ok: false, error: "No active workspace." };
+      const existing = tasks.find((t) => t.control === c.id);
+      if (existing) return { ok: true, created: false };
+
+      const code = `RT-${c.id}`;
+      const priority = c.risk as Task["priority"];
+      const row = {
+        org_id: org.id,
+        code,
+        title: c.task || `Remediate ${c.title}`,
+        control_id: c.id,
+        priority,
+        status: "Open",
+        reason: c.remediation,
+        overdue: false,
+        display_order: tasks.length + 1,
+      };
+      const { error } = await client.from("tasks").insert(row as never);
+      if (error) return { ok: false, error: error.message };
+
+      // Let every other live tasks hook (e.g. the sidebar badge) refetch.
+      useUI.getState().bumpData();
+      setTasks((prev) => [
+        ...prev,
+        {
+          id: code,
+          title: row.title,
+          control: c.id,
+          priority,
+          status: "Open",
+          owner: "",
+          due: "",
+          overdue: false,
+          reason: c.remediation,
+        },
+      ]);
+      return { ok: true, created: true };
+    },
+    [client, org, tasks],
+  );
+
+  return { tasks, source, setStatus, createFromControl, live: source === "live" };
 }
 
 export function useRisks() {

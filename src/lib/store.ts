@@ -60,6 +60,10 @@ interface UIState {
   authOpen: boolean; // sign-in dialog
   taskView: "list" | "kanban";
 
+  // Bumped after a write (e.g. creating a task) so every live hook instance
+  // refetches and stays in sync — including the sidebar badges.
+  dataRev: number;
+
   // records & ops state
   intakeStep: number; // breach intake wizard 0..3
   auditFilter: string;
@@ -73,6 +77,7 @@ interface UIState {
   assess: (id: string) => void;
   goDomain: (cat: string) => void;
   setAssessCat: (cat: string | null) => void;
+  bumpData: () => void;
   setAnswer: (id: string, label: string) => void;
   setNote: (id: string, v: string) => void;
   hydrateAnswers: (answers: Record<string, string>, notes: Record<string, string>) => void;
@@ -112,6 +117,7 @@ export const useUI = create<UIState>((set, get) => ({
   portalStep: 0,
 
   assessCat: null,
+  dataRev: 0,
   // Empty by default; a signed-in user's saved answers are hydrated from the
   // database on load (see AuthProvider). New accounts start with a clean slate.
   answers: {},
@@ -134,6 +140,7 @@ export const useUI = create<UIState>((set, get) => ({
   assess: (id) => set({ screen: "assessment", controlId: id, palette: false }),
   goDomain: (cat) => set({ screen: "assessment", assessCat: cat, palette: false }),
   setAssessCat: (cat) => set({ assessCat: cat }),
+  bumpData: () => set((s) => ({ dataRev: s.dataRev + 1 })),
   setAnswer: (id, label) => set((s) => ({ answers: { ...s.answers, [id]: label } })),
   setNote: (id, v) => set((s) => ({ notesById: { ...s.notesById, [id]: v } })),
   hydrateAnswers: (answers, notes) => set({ answers, notesById: notes }),

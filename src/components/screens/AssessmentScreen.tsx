@@ -5,6 +5,7 @@ import { LiveBadge } from "@/components/ui/LiveBadge";
 import { ANSWERS } from "@/lib/data/controls";
 import { useControls } from "@/components/ControlsProvider";
 import { useAuth } from "@/lib/supabase/auth";
+import { useTasks } from "@/lib/supabase/operational";
 import { saveAnswer } from "@/lib/supabase/answers";
 import { RISK_TONE, shade } from "@/lib/tokens";
 import { useUI } from "@/lib/store";
@@ -12,6 +13,7 @@ import { useUI } from "@/lib/store";
 export function AssessmentScreen() {
   const { list, total } = useControls();
   const { client, userId } = useAuth();
+  const { createFromControl } = useTasks();
   const controlId = useUI((s) => s.controlId);
   const assessCat = useUI((s) => s.assessCat);
   const answers = useUI((s) => s.answers);
@@ -281,9 +283,14 @@ export function AssessmentScreen() {
           </div>
           <p className="m-0 mb-3 text-[12px] leading-[1.6] [text-wrap:pretty]" style={{ color: "#5f3512" }}>{q.remediation}</p>
           <button
-            onClick={() => {
+            onClick={async () => {
+              const res = await createFromControl({ id: q.id, title: q.title, task: q.task, risk: q.risk, remediation: q.remediation });
+              if (!res.ok) {
+                useUI.getState().flash(res.error);
+                return;
+              }
+              useUI.getState().flash(res.created ? `Task created: ${q.task}` : "A remediation task already exists for this control.");
               useUI.getState().go("tasks");
-              useUI.getState().flash(`Task created: ${q.task}`);
             }}
             className="flex w-full items-center justify-center gap-[7px] rounded-full border border-[#dcc3a6] bg-surface px-3 py-2 text-[12px] font-semibold hover:border-[#c67139]"
             style={{ color: "#5f3512" }}
