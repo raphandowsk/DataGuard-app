@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles transcribed from the prototype's global <style> block. */
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #eef1f2;
+  }
+  body {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    color: #0e1a1c;
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-weight: 600;
+  }
+  a {
+    color: #0d7d75;
+    text-decoration: none;
+  }
+  a:hover {
+    color: #095e58;
+    text-decoration: underline;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid #0d7d75;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: #cbe6e3;
+  }
+  svg.lucide {
+    display: block;
+  }
+}
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Thin scrollbars inside the app panes */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #cfd8d9 transparent;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background: #cfd8d9;
+    border-radius: 999px;
+  }
+}

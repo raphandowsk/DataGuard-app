@@ -1,0 +1,36 @@
+name: Build static export
+
+# Builds the static export (out/) on every push to main and uploads it as a
+# downloadable artifact. It does NOT publish to GitHub Pages, so it needs no
+# repository settings and never fails on a disabled Pages deployment. Download
+# the "site" artifact from the run to deploy the files wherever you host them.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # @supabase/supabase-js >=2.115 requires Node >=22.
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          # These are public (shipped to the browser). Override them by setting
+          # repository Variables of the same name if the Supabase project changes.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://udlrihnuwfwndbpmxqtq.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_PJ5CtduzMgaIIUDW9VE0hg_nG3fTEc9' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: out

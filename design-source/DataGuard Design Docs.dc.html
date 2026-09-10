@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="./doc-page.js"></script>
+<style>
+  doc-page:not(:defined) { visibility:hidden; }
+  html, body { margin:0; padding:0; }
+  body { font-family:'Instrument Sans', system-ui, sans-serif; color:#0e1a1c; }
+  * { box-sizing:border-box; }
+  a { color:#0d7d75; text-decoration:none; }
+  a:hover { color:#095e58; text-decoration:underline; }
+  table { border-collapse:collapse; }
+  :focus-visible { outline:2px solid #0d7d75; outline-offset:2px; }
+</style>
+</helmet>
+
+<doc-page margin="0.7in">
+
+  <div slot="header" style="display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; border-bottom:1px solid #e3e9ea; font-size:8.5pt; color:#5b6b6e">
+    <span>DataGuard — design documentation</span>
+    <span>Tanzania PDPA 2022 · matrix v1.0.0</span>
+  </div>
+
+  <div slot="footer" style="display:flex; align-items:center; justify-content:space-between; padding-top:8px; border-top:1px solid #e3e9ea; font-size:8.5pt; color:#5b6b6e">
+    <span>Prepared 5 September 2026</span>
+    <span>Compliance management record. Not legal advice.</span>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px">
+    <div style="width:30px; height:30px; border-radius:9px; background:#0d7d75; color:#ffffff; display:grid; place-items:center; font-size:13pt; font-weight:700; flex:0 0 auto">D</div>
+    <div style="font-size:11pt; font-weight:600; letter-spacing:-0.2px">DataGuard</div>
+  </div>
+
+  <h1 style="margin:0 0 10px; font-family:'Instrument Serif', Georgia, serif; font-size:30pt; font-weight:400; line-height:1.1; letter-spacing:-0.5px">Design documentation</h1>
+  <p style="margin:0 0 6px; font-size:12pt; line-height:1.5; color:#3d4e51; max-width:46em">Screen inventory, information architecture and design tokens for the DataGuard compliance tracker, extracted from the working prototype.</p>
+  <p style="margin:0 0 30px; font-size:9.5pt; line-height:1.5; color:#5b6b6e">Companion to <strong>DataGuard Prototype.dc.html</strong>. Demo tenant: Mazingira Trust, an environmental NGO in Dar es Salaam. Consultant tenant: twelve client organisations.</p>
+
+  <h2 style="margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #0e1a1c; font-size:13pt; font-weight:600">1. Information architecture</h2>
+  <p style="margin:0 0 14px; font-size:10pt; line-height:1.6; color:#3d4e51; max-width:44em">Navigation is grouped by the question a user is answering, not by the structure of the Act. Legal references travel with individual controls rather than organising the menu, because users arrive with a business question and leave with a statutory citation.</p>
+
+  <table style="width:100%; font-size:9pt; margin-bottom:12px">
+    <thead>
+      <tr style="background:#f7f9f9">
+        <th scope="col" style="text-align:left; padding:7px 9px; border:1px solid #e3e9ea; font-size:8pt; letter-spacing:0.4px; color:#5b6b6e">GROUP</th>
+        <th scope="col" style="text-align:left; padding:7px 9px; border:1px solid #e3e9ea; font-size:8pt; letter-spacing:0.4px; color:#5b6b6e">SECTIONS</th>
+        <th scope="col" style="text-align:left; padding:7px 9px; border:1px solid #e3e9ea; font-size:8pt; letter-spacing:0.4px; color:#5b6b6e">THE QUESTION IT ANSWERS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <sc-for list="{{ ia }}" as="r" hint-placeholder-count="7">
+        <tr style="break-inside:avoid">
+          <td style="padding:7px 9px; border:1px solid #e3e9ea; font-weight:600; vertical-align:top; white-space:nowrap">{{ r.group }}</td>
+          <td style="padding:7px 9px; border:1px solid #e3e9ea; vertical-align:top; color:#3d4e51">{{ r.items }}</td>
+          <td style="padding:7px 9px; border:1px solid #e3e9ea; vertical-align:top; color:#5b6b6e">{{ r.q }}</td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+
+  <p style="margin:0 0 30px; font-size:9pt; line-height:1.6; color:#5b6b6e; max-width:44em">Two tenant types share one shell. The topbar organisation chip switches between an organisation workspace and the consultant workspace; each client opens as its own tenant, and nothing aggregates across clients beyond the portfolio counts.</p>
+
+  <h2 style="margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #0e1a1c; font-size:13pt; font-weight:600">2. Screen inventory</h2>
+  <p style="margin:0 0 14px; font-size:10pt; line-height:1.6; color:#3d4e51; max-width:44em">Twenty-nine screens are built: every screen in the architecture, plus the six second-level flows that open out of them. Nothing routes to an empty state.</p>
+
+  <table style="width:100%; font-size:9pt; margin-bottom:12px">
+    <thead>
+      <tr style="background:#f7f9f9">
+        <th scope="col" style="text-align:left; padding:7px 9px; border:1px solid #e3e9ea; font-size:8pt; letter-spacing:0.4px; color:#5b6b6e">SCREEN</th>
+        <th scope="col" style="text-align:left; padding:7px 9px; border:1px solid #e3e9ea; font-size:8pt; letter-spacing:0.4px; color:#5b6b6e">STATE</th>
+        <th scope="col" style="text-align:left; padding:7px 9px; border:1px solid #e3e9ea; font-size:8pt; letter-spacing:0.4px; color:#5b6b6e">WHAT IT CONTAINS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <sc-for list="{{ screens }}" as="s" hint-placeholder-count="20">
+        <tr style="break-inside:avoid">
+          <td style="padding:7px 9px; border:1px solid #e3e9ea; font-weight:600; vertical-align:top; white-space:nowrap">{{ s.name }}</td>
+          <td style="padding:7px 9px; border:1px solid #e3e9ea; vertical-align:top; white-space:nowrap; color:{{ s.color }}; font-weight:600; font-size:8pt">{{ s.state }}</td>
+          <td style="padding:7px 9px; border:1px solid #e3e9ea; vertical-align:top; color:#3d4e51">{{ s.what }}</td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+
+  <h2 style="margin:26px 0 12px; padding-bottom:7px; border-bottom:2px solid #0e1a1c; font-size:13pt; font-weight:600">3. Primary flow</h2>
+  <p style="margin:0 0 14px; font-size:10pt; line-height:1.6; color:#3d4e51; max-width:44em">The flow the prototype makes clickable end to end. Every step produces a record that the next step reads.</p>
+  <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:30px">
+    <sc-for list="{{ flow }}" as="f" hint-placeholder-count="6">
+      <div style="display:flex; gap:11px; align-items:flex-start; padding:11px 13px; background:#f7f9f9; border-radius:8px; break-inside:avoid">
+        <span style="width:20px; height:20px; border-radius:50%; background:#0d7d75; color:#ffffff; display:grid; place-items:center; font-size:8pt; font-weight:700; flex:0 0 auto">{{ f.n }}</span>
+        <div>
+          <div style="font-size:9.5pt; font-weight:600">{{ f.step }}</div>
+          <div style="font-size:9pt; line-height:1.55; color:#5b6b6e; margin-top:2px">{{ f.detail }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <h2 style="margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #0e1a1c; font-size:13pt; font-weight:600">4. Design tokens</h2>
+  <p style="margin:0 0 16px; font-size:10pt; line-height:1.6; color:#3d4e51; max-width:44em">A cool neutral ground with a single teal action colour, plus a four-step status ramp that carries all severity and health meaning. Status colour is never the only signal: every badge pairs it with an icon and a word.</p>
+
+  <h3 style="margin:0 0 9px; font-size:10pt; font-weight:600">Colour</h3>
+  <div style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px">
+    <sc-for list="{{ colors }}" as="c" hint-placeholder-count="14">
+      <div style="width:104px; break-inside:avoid">
+        <div style="height:38px; border-radius:6px; background:{{ c.hex }}; border:1px solid #e3e9ea"></div>
+        <div style="font-size:8pt; font-weight:600; margin-top:4px">{{ c.name }}</div>
+        <div style="font-family:ui-monospace, monospace; font-size:7.5pt; color:#5b6b6e">{{ c.hex }}</div>
+        <div style="font-size:7.5pt; color:#93a1a4; line-height:1.35; margin-top:1px">{{ c.use }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <h3 style="margin:0 0 9px; font-size:10pt; font-weight:600">Type</h3>
+  <table style="width:100%; font-size:9pt; margin-bottom:16px">
+    <thead>
+      <tr style="background:#f7f9f9">
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">ROLE</th>
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">FACE</th>
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">SIZE / WEIGHT</th>
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">USED FOR</th>
+      </tr>
+    </thead>
+    <tbody>
+      <sc-for list="{{ type }}" as="t" hint-placeholder-count="7">
+        <tr style="break-inside:avoid">
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; font-weight:600; white-space:nowrap">{{ t.role }}</td>
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; color:#3d4e51; white-space:nowrap">{{ t.face }}</td>
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; font-family:ui-monospace, monospace; font-size:8pt; color:#5b6b6e; white-space:nowrap">{{ t.size }}</td>
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; color:#5b6b6e">{{ t.use }}</td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+
+  <h3 style="margin:0 0 9px; font-size:10pt; font-weight:600">Shape, spacing and elevation</h3>
+  <table style="width:100%; font-size:9pt; margin-bottom:26px">
+    <thead>
+      <tr style="background:#f7f9f9">
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">TOKEN</th>
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">VALUE</th>
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">APPLIED TO</th>
+      </tr>
+    </thead>
+    <tbody>
+      <sc-for list="{{ shape }}" as="x" hint-placeholder-count="9">
+        <tr style="break-inside:avoid">
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; font-weight:600; white-space:nowrap">{{ x.token }}</td>
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; font-family:ui-monospace, monospace; font-size:8pt; color:#3d4e51; white-space:nowrap">{{ x.value }}</td>
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; color:#5b6b6e">{{ x.use }}</td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+
+  <h2 style="margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #0e1a1c; font-size:13pt; font-weight:600">5. Copy rules that protect the product</h2>
+  <p style="margin:0 0 14px; font-size:10pt; line-height:1.6; color:#3d4e51; max-width:44em">These are not style preferences. Each one keeps the product from making a claim it cannot support.</p>
+  <div style="display:flex; flex-direction:column; gap:9px; margin-bottom:26px">
+    <sc-for list="{{ rules }}" as="r" hint-placeholder-count="9">
+      <div style="padding:12px 14px; border:1px solid #e3e9ea; border-left:3px solid #0d7d75; border-radius:0 8px 8px 0; break-inside:avoid">
+        <div style="font-size:9.5pt; font-weight:600; margin-bottom:4px">{{ r.rule }}</div>
+        <div style="font-size:9pt; line-height:1.6; color:#3d4e51">{{ r.detail }}</div>
+        <div style="font-size:8.5pt; line-height:1.5; color:#93a1a4; margin-top:5px">Never: {{ r.never }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <h2 style="margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #0e1a1c; font-size:13pt; font-weight:600">6. Accessibility notes</h2>
+  <ul style="margin:0 0 26px; padding-left:20px; font-size:9.5pt; line-height:1.75; color:#3d4e51; max-width:44em">
+    <sc-for list="{{ a11y }}" as="a" hint-placeholder-count="7">
+      <li style="margin-bottom:4px">{{ a.v }}</li>
+    </sc-for>
+  </ul>
+
+  <h2 style="margin:0 0 12px; padding-bottom:7px; border-bottom:2px solid #0e1a1c; font-size:13pt; font-weight:600">7. Not yet designed</h2>
+  <p style="margin:0 0 12px; font-size:10pt; line-height:1.6; color:#3d4e51; max-width:44em">The architecture and its second-level flows are complete. What remains are whole capabilities rather than missing screens.</p>
+  <table style="width:100%; font-size:9pt">
+    <thead>
+      <tr style="background:#f7f9f9">
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">SCREEN</th>
+        <th scope="col" style="text-align:left; padding:6px 9px; border:1px solid #e3e9ea; font-size:8pt; color:#5b6b6e">WHY IT MATTERS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <sc-for list="{{ pending }}" as="p" hint-placeholder-count="7">
+        <tr style="break-inside:avoid">
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; font-weight:600; vertical-align:top">{{ p.name }}</td>
+          <td style="padding:6px 9px; border:1px solid #e3e9ea; color:#3d4e51">{{ p.why }}</td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+
+</doc-page>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const built = { state: 'Built', color: '#16775a' };
+    const empty = { state: 'Empty state', color: '#a4501f' };
+    const S = (name, st, what) => ({ name, state: st.state, color: st.color, what });
+
+    return {
+      ia: [
+        { group: 'Overview', items: 'Dashboard', q: 'Where do we stand, and what needs a decision today?' },
+        { group: 'Compliance', items: 'Assessment, Controls, Risks, Tasks', q: 'What does the Act require of us, and are we doing it?' },
+        { group: 'Data', items: 'Data inventory, Data map, Sensitive data, Retention, Transfers', q: 'What personal data do we hold, where does it sit, and where does it go?' },
+        { group: 'People', items: 'Rights requests, Consent', q: 'What have data subjects asked us for, and what did they agree to?' },
+        { group: 'Third parties', items: 'Processors, Contracts', q: 'Who handles data on our behalf, and is that governed in writing?' },
+        { group: 'Records', items: 'Incidents, Policies, Evidence vault, Reports', q: 'Can we prove any of this to a regulator or an auditor?' },
+        { group: 'Admin', items: 'Settings', q: 'Who can see and change what?' }
+      ],
+
+      screens: [
+        S('Dashboard', built, 'Control coverage, coverage by domain, five priority actions, open risk distribution, recent activity.'),
+        S('Assessment', built, 'Section rail, one control per view, five fixed answers, why-we-ask panel with statutory text, evidence attach, notes, remediation rail.'),
+        S('Control detail', built, 'Requirement, statutory text as mapped, why it matters, implementation guidance, evidence list, activity history, risk rationale.'),
+        S('Risks', built, 'Register table with likelihood, impact and score; 5×5 matrix with counts; methodology disclaimer.'),
+        S('Tasks', built, 'List and board views; each task carries the control it came from and the reason it exists.'),
+        S('Reports', built, 'Nine report types, section and format configuration, paper preview with framework and matrix version in the header.'),
+        S('Consultant portfolio', built, 'Portfolio counts, twelve-client table with coverage and health, needs-you-first queue, cross-client activity.'),
+        S('Data inventory', built, 'Eight processing activities with subjects, categories, lawful basis, systems, retention and record completeness.'),
+        S('Data map', built, 'Three-column flow: whose data, where it sits, who receives it. Cross-border systems flagged.'),
+        S('Cross-border transfers', built, 'Four routes as assessment cards with destination, processor, volume, stated basis and recorded reasoning.'),
+        S('Rights requests', built, 'Queue with days elapsed, identity-verification state, stage and channel; link to the public portal.'),
+        S('Public rights portal', built, 'Unauthenticated request form in plain language, identity explanation, and a three-step confirmation.'),
+        S('Processor register', built, 'Eleven processors with service, data handled, location, contract status and security review date.'),
+        S('Incidents', built, 'Case list with severity and notification state, plus a section 27(5) timeline for the open case.'),
+        S('Onboarding', built, 'Five-step first-run flow: organisation, controller or processor role, framework scope, people, baseline.'),
+        S('Command palette', built, 'Copilot questions, record search across controls, risks and evidence, and go-to navigation across all screens.'),
+        S('Rights case detail', built, 'Six-stage tracker, identity verification record, record search across five systems with include and exclude decisions, response pack, case log.'),
+        S('Incident intake', built, 'Four steps: what happened, what data, notifiability assessment against five tests, notification to the Commission. Awareness clock runs throughout.'),
+        S('Transfer assessment', built, 'Six questions producing one recorded decision for a single route, with the decision, its conditions and next review in the rail.'),
+        S('Audit trail', built, 'Twelve-entry immutable log with actor, role, action, object, before and after values, and source. Six filters.'),
+        S('Consent wording history', built, 'Version list with population per version, and a line-level diff between v3.0 and v3.1 marking additions and removals.'),
+        S('Framework migration', built, 'Version comparison, seven changed controls with change type and impact on existing answers, apply action.'),
+        S('Sensitive data', built, 'Six sensitive categories with subjects, record counts, lawful basis, access breadth and masking state. Two have no recorded basis.'),
+        S('Retention', built, 'Eight record types with period, the law or policy the period comes from, disposal method and next review. Sources resting on policy alone are flagged.'),
+        S('Consent', built, 'Five purposes as cards: wording version and language, method, consents held, consents withdrawn, last update.'),
+        S('Contracts', built, 'Seven-clause coverage per processor with a coverage bar, signature and expiry. Four processors have no contract at all.'),
+        S('Policies', built, 'Nine policies with version, owner, approval, next review and controls supported. One expired, one missing entirely.'),
+        S('Evidence vault', built, 'Nine documents with type, owner, linked control count, expiry and evidence strength. One required document is absent.'),
+        S('Settings', built, 'Organisation profile, seven-role permission list, per-account notifications, DPO panel with the open critical finding, framework version, security posture.')
+      ],
+
+      flow: [
+        { n: 1, step: 'Dashboard shows what needs attention', detail: 'Five actions ranked by product risk level and how overdue they are, each naming its control and owner.' },
+        { n: 2, step: 'Assessment answers the control', detail: 'Plain-language question, five fixed answers, statutory text alongside. Answers save as you go and I do not know is a legitimate answer.' },
+        { n: 3, step: 'Evidence is attached to the control', detail: 'Suggested evidence types come from the framework. The modal warns that evidence may itself contain personal data.' },
+        { n: 4, step: 'Remediation becomes a task', detail: 'The task carries the control reference and the reason it exists, so the person who picks it up does not need the assessment context.' },
+        { n: 5, step: 'The risk register reflects the gap', detail: 'Likelihood and impact score on the product 5×5 scale, labelled as a product methodology rather than a statutory classification.' },
+        { n: 6, step: 'A report exports the record', detail: 'Every export names the framework version, the matrix version, the date and the person who generated it.' }
+      ],
+
+      colors: [
+        { name: 'Ground', hex: '#eef1f2', use: 'App background' },
+        { name: 'Surface', hex: '#ffffff', use: 'Cards, tables' },
+        { name: 'Surface sunk', hex: '#f7f9f9', use: 'Chips, inset panels' },
+        { name: 'Border', hex: '#e3e9ea', use: 'All hairlines' },
+        { name: 'Ink', hex: '#0e1a1c', use: 'Primary text' },
+        { name: 'Ink body', hex: '#3d4e51', use: 'Body copy' },
+        { name: 'Ink muted', hex: '#5b6b6e', use: 'Labels, meta' },
+        { name: 'Ink faint', hex: '#93a1a4', use: 'Column heads, hints' },
+        { name: 'Action', hex: '#0d7d75', use: 'Primary buttons, links' },
+        { name: 'Action press', hex: '#095e58', use: 'Hover and pressed' },
+        { name: 'Action tint', hex: '#e5f2f0', use: 'Selected nav and answers' },
+        { name: 'Good', hex: '#16775a', use: 'Complete, verified' },
+        { name: 'Attention', hex: '#a4501f', use: 'Partial, review due' },
+        { name: 'Critical', hex: '#8e2b22', use: 'Gap, overdue, critical' },
+        { name: 'Medium', hex: '#7a6212', use: 'Medium severity' },
+        { name: 'Low', hex: '#4d5c38', use: 'Low severity' },
+        { name: 'Info', hex: '#2b5f9e', use: 'In progress, notices' },
+        { name: 'Portal', hex: '#2f6b4f', use: 'Public-facing actions' }
+      ],
+
+      type: [
+        { role: 'Display numeral', face: 'Instrument Serif', size: '76px / 400', use: 'The coverage score and report titles only' },
+        { role: 'Page title', face: 'Instrument Sans', size: '24px / 600', use: 'Screen headings' },
+        { role: 'Card title', face: 'Instrument Sans', size: '13px / 600', use: 'Section headings inside cards' },
+        { role: 'Question', face: 'Instrument Sans', size: '25px / 600', use: 'The assessment question' },
+        { role: 'Body', face: 'Instrument Sans', size: '13.5px / 400', use: 'Guidance, explanations, portal copy' },
+        { role: 'Interface', face: 'Instrument Sans', size: '12.5px / 500', use: 'Buttons, table cells, nav' },
+        { role: 'Meta', face: 'Instrument Sans', size: '11px / 400', use: 'Timestamps, owners, counts' },
+        { role: 'Column head', face: 'Instrument Sans', size: '10.5px / 700, 0.5px tracking', use: 'Table headers, group labels' },
+        { role: 'Identifier', face: 'ui-monospace', size: '10.5px', use: 'Control, risk and case IDs' }
+      ],
+
+      shape: [
+        { token: 'radius-card', value: '16px', use: 'Top-level cards and sections' },
+        { token: 'radius-inner', value: '11–13px', use: 'Rows, wells, inputs, modals content' },
+        { token: 'radius-control', value: '9px', use: 'Nav items, icon buttons' },
+        { token: 'radius-pill', value: '999px', use: 'All buttons and status badges' },
+        { token: 'gap-grid', value: '16px', use: 'Between cards' },
+        { token: 'pad-card', value: '20–24px', use: 'Card interiors' },
+        { token: 'pad-row', value: '12–14px vertical, 20px horizontal', use: 'Table and list rows' },
+        { token: 'topbar', value: '60px, sticky', use: 'Header height' },
+        { token: 'sidebar', value: '248px', use: 'Navigation width' },
+        { token: 'elevation', value: '0 24px 60px rgba(14,26,28,0.22)', use: 'Modals and the palette only; cards use borders' }
+      ],
+
+      rules: [
+        { rule: 'Say coverage, never compliance', detail: 'The score is labelled control coverage and assessment coverage, with a note that it is not a statement of legal compliance.', never: '“You are 71% compliant.”' },
+        { rule: 'Label the risk methodology', detail: 'Severity is likelihood times impact on a DataGuard 5×5 scale, stated as a product methodology wherever a severity appears.', never: 'Implying a statutory risk class or a penalty band.' },
+        { rule: 'Quote the Act, do not paraphrase it', detail: 'Statutory text is shown verbatim and visually separated from product guidance.', never: 'Inventing a deadline, a fine, or a requirement the Act does not state.' },
+        { rule: 'Do not invent deadlines', detail: 'Where the Act says without undue delay, the product says so and treats any hour target as the organisation’s own commitment.', never: '“You have 72 hours to notify.”' },
+        { rule: 'I do not know is a real answer', detail: 'It is one of five fixed answers and never penalised in the interface, because a false Implemented is worse than an honest gap.', never: 'Forcing a yes or no.' },
+        { rule: 'Warn that evidence holds personal data', detail: 'Every upload surface carries a notice about minimisation and restricted access.', never: 'Encouraging bulk upload of beneficiary records as proof.' },
+        { rule: 'Copilot cites, and never advises', detail: 'Answers are drawn from the organisation’s own records and cite the controls they came from.', never: 'Presenting output as legal advice.' },
+        { rule: 'Record the exclusion, not just the release', detail: 'When a record is withheld from a rights response, the reason is recorded and the response says a record was withheld.', never: 'Silently dropping a record because it names somebody else.' },
+        { rule: 'The user assesses, the product records', detail: 'Notifiability, transfer approval and risk severity are the user’s decisions. The product structures the reasoning and keeps it.', never: '“DataGuard has determined this breach is notifiable.”' }
+      ],
+
+      a11y: [
+        { v: 'Body text meets 4.5:1 against its background; the teal action colour is used at full opacity on white, never as a muted tint behind text.' },
+        { v: 'Status is never colour alone. Every severity, health and contract badge pairs its colour with an icon and a word.' },
+        { v: 'Assessment answers are a labelled radio group with aria-checked, so the selected answer is announced rather than only shown.' },
+        { v: 'Active navigation carries aria-current="page" in addition to the tinted background.' },
+        { v: 'Focus is a 2px teal ring at 2px offset on every interactive element; the browser default is never left in place.' },
+        { v: 'Modals declare role="dialog" with aria-modal and an accessible name, and Escape closes the palette, the evidence modal, the portal and setup.' },
+        { v: 'Public portal controls are at least 44px tall, since most requests will arrive on a phone.' },
+        { v: 'Tables use scope="col" headers and repeat them at print; long tables keep a thead so it repeats per page.' },
+        { v: 'All animation is suppressed under prefers-reduced-motion.' }
+      ],
+
+      pending: [
+        { name: 'Mobile field capture', why: 'Beneficiary enrolment happens on phones, often offline, in the field. Nothing in this pass addresses small-screen capture or the offline sync that enrolment needs.' },
+        { name: 'Consultant client onboarding', why: 'The portfolio lists twelve clients but there is no flow for taking on the thirteenth, scoping the engagement or setting the access expiry.' },
+        { name: 'Report scheduling and delivery', why: 'Reports generate on demand. Board and donor reporting is periodic, so a schedule with named recipients is the natural next step.' },
+        { name: 'Copilot conversation', why: 'The palette offers two example questions. The answer surface, its citations and its refusal behaviour are not designed.' },
+        { name: 'Bulk import', why: 'A new organisation arrives with spreadsheets of processors, activities and systems. Typing them in one at a time is the current implied path.' },
+        { name: 'Registration submission', why: 'Registration controls are assessed, but the filing and renewal correspondence with the Commission is tracked outside the product.' },
+        { name: 'Empty and first-run states', why: 'Every screen is shown populated. A new tenant sees all of them empty, and that is where most abandonment happens.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
