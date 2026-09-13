@@ -149,8 +149,8 @@ Studio SQL editor). Example with `psql`:
 
 ```bash
 # From the DataGuard repo root, on a host that can reach Postgres.
-# Migrations 001–008, in numeric order:
-for f in db/supabase/00*_*.sql; do
+# All numbered migrations, in order (001, 002, … 010, …):
+for f in $(ls db/supabase/[0-9][0-9][0-9]_*.sql | sort); do
   echo "Applying $f"
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
 done
@@ -348,5 +348,5 @@ When the app or the PDPA matrix changes:
 ### Migration order
 `001_schema` → `002_multitenant` → `003_operational_registers` →
 `004_incidents_transfers` → `005_auth_provisioning` →
-`006_operational_member_writes` → `007_settings_admin` → `008_audit_logging`,
-then `seed-framework.sql`.
+`006_operational_member_writes` → `007_settings_admin` → `008_audit_logging` →
+`009_control_answers` → `010_advisor_hardening`, then `seed-framework.sql`.
