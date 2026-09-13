@@ -8,6 +8,11 @@ which is why GitHub Pages (and Hostinger static hosting) work.
 **Current live URL:** https://mediumspringgreen-falcon-446430.hostingersite.com/
 (Hostinger, served at the domain root — no `basePath` needed).
 
+> **Client on-premise / self-hosting?** This document covers the managed path
+> (vendor-hosted Supabase). For running DataGuard entirely on a client's own
+> infrastructure with **self-hosted Supabase**, see
+> [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md).
+
 > These values are committed in `.env.production`, so **every `next build`
 > inlines them automatically**. If you see "Supabase is not configured" on a
 > deployed site, it was built before this file existed — rebuild and re-upload.
